@@ -15,6 +15,8 @@ export default function AddStudent() {
     phone: "",
     birthDate: "",
     belt: "white",
+    status: "trial",
+    membershipStatus: "active",
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -108,6 +110,35 @@ export default function AddStudent() {
                 </SelectContent>
               </Select>
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="status">Status</Label>
+              <Select value={formData.status} onValueChange={(value) => handleChange("status", value)}>
+                <SelectTrigger id="status">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="trial">Trial</SelectItem>
+                  <SelectItem value="student">Student</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {formData.status === "student" && (
+              <div className="space-y-2">
+                <Label htmlFor="membershipStatus">Membership Status</Label>
+                <Select value={formData.membershipStatus} onValueChange={(value) => handleChange("membershipStatus", value)}>
+                  <SelectTrigger id="membershipStatus">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="frozen">Frozen</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div className="flex gap-4 pt-4">
               <Button type="submit" className="flex-1">

@@ -2,19 +2,23 @@ import { useState } from "react";
 import { Search, Mail, Phone } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import BeltBadge, { BeltRank } from "@/components/BeltBadge";
 import { Link } from "react-router-dom";
 
+export type StudentStatus = "trial" | "student";
+export type MembershipStatus = "active" | "frozen" | "inactive";
+
 // Mock data
 const studentsData = [
-  { id: 1, name: "Carlos Silva", belt: "blue" as BeltRank, email: "carlos@email.com", phone: "+55 11 98765-4321", joinDate: "2024-01-15" },
-  { id: 2, name: "Ana Santos", belt: "white" as BeltRank, email: "ana@email.com", phone: "+55 11 98765-4322", joinDate: "2024-01-20" },
-  { id: 3, name: "Pedro Costa", belt: "purple" as BeltRank, email: "pedro@email.com", phone: "+55 11 98765-4323", joinDate: "2024-01-22" },
-  { id: 4, name: "Maria Oliveira", belt: "white" as BeltRank, email: "maria@email.com", phone: "+55 11 98765-4324", joinDate: "2024-01-25" },
-  { id: 5, name: "João Ferreira", belt: "brown" as BeltRank, email: "joao@email.com", phone: "+55 11 98765-4325", joinDate: "2023-06-10" },
-  { id: 6, name: "Beatriz Lima", belt: "blue" as BeltRank, email: "beatriz@email.com", phone: "+55 11 98765-4326", joinDate: "2023-08-15" },
-  { id: 7, name: "Rafael Souza", belt: "black" as BeltRank, email: "rafael@email.com", phone: "+55 11 98765-4327", joinDate: "2020-01-05" },
-  { id: 8, name: "Julia Martins", belt: "purple" as BeltRank, email: "julia@email.com", phone: "+55 11 98765-4328", joinDate: "2023-03-20" },
+  { id: 1, name: "Carlos Silva", belt: "blue" as BeltRank, email: "carlos@email.com", phone: "+55 11 98765-4321", joinDate: "2024-01-15", status: "student" as StudentStatus, membershipStatus: "active" as MembershipStatus },
+  { id: 2, name: "Ana Santos", belt: "white" as BeltRank, email: "ana@email.com", phone: "+55 11 98765-4322", joinDate: "2024-01-20", status: "trial" as StudentStatus },
+  { id: 3, name: "Pedro Costa", belt: "purple" as BeltRank, email: "pedro@email.com", phone: "+55 11 98765-4323", joinDate: "2024-01-22", status: "student" as StudentStatus, membershipStatus: "active" as MembershipStatus },
+  { id: 4, name: "Maria Oliveira", belt: "white" as BeltRank, email: "maria@email.com", phone: "+55 11 98765-4324", joinDate: "2024-01-25", status: "trial" as StudentStatus },
+  { id: 5, name: "João Ferreira", belt: "brown" as BeltRank, email: "joao@email.com", phone: "+55 11 98765-4325", joinDate: "2023-06-10", status: "student" as StudentStatus, membershipStatus: "frozen" as MembershipStatus },
+  { id: 6, name: "Beatriz Lima", belt: "blue" as BeltRank, email: "beatriz@email.com", phone: "+55 11 98765-4326", joinDate: "2023-08-15", status: "student" as StudentStatus, membershipStatus: "active" as MembershipStatus },
+  { id: 7, name: "Rafael Souza", belt: "black" as BeltRank, email: "rafael@email.com", phone: "+55 11 98765-4327", joinDate: "2020-01-05", status: "student" as StudentStatus, membershipStatus: "inactive" as MembershipStatus },
+  { id: 8, name: "Julia Martins", belt: "purple" as BeltRank, email: "julia@email.com", phone: "+55 11 98765-4328", joinDate: "2023-03-20", status: "student" as StudentStatus, membershipStatus: "active" as MembershipStatus },
 ];
 
 export default function Students() {
@@ -51,7 +55,12 @@ export default function Students() {
                   <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-primary text-xl font-bold text-primary-foreground">
                     {student.name.charAt(0)}
                   </div>
-                  <BeltBadge rank={student.belt} />
+                  <div className="flex flex-col gap-2 items-end">
+                    <BeltBadge rank={student.belt} />
+                    <Badge variant={student.status === "trial" ? "secondary" : "default"} className="text-xs">
+                      {student.status === "trial" ? "Trial" : student.membershipStatus?.charAt(0).toUpperCase() + student.membershipStatus?.slice(1)}
+                    </Badge>
+                  </div>
                 </div>
                 
                 <h3 className="text-lg font-bold text-foreground mb-3">{student.name}</h3>

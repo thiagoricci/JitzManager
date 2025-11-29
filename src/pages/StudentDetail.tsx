@@ -2,18 +2,19 @@ import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Mail, Phone, Calendar, Award } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import BeltBadge, { BeltRank } from "@/components/BeltBadge";
 
 // Mock data (in a real app, this would come from an API/database)
 const studentsData: Record<string, any> = {
-  "1": { id: 1, name: "Carlos Silva", belt: "blue", email: "carlos@email.com", phone: "+55 11 98765-4321", joinDate: "2024-01-15", birthDate: "1995-03-20" },
-  "2": { id: 2, name: "Ana Santos", belt: "white", email: "ana@email.com", phone: "+55 11 98765-4322", joinDate: "2024-01-20", birthDate: "1998-07-15" },
-  "3": { id: 3, name: "Pedro Costa", belt: "purple", email: "pedro@email.com", phone: "+55 11 98765-4323", joinDate: "2024-01-22", birthDate: "1992-11-10" },
-  "4": { id: 4, name: "Maria Oliveira", belt: "white", email: "maria@email.com", phone: "+55 11 98765-4324", joinDate: "2024-01-25", birthDate: "2000-05-30" },
-  "5": { id: 5, name: "João Ferreira", belt: "brown", email: "joao@email.com", phone: "+55 11 98765-4325", joinDate: "2023-06-10", birthDate: "1990-02-14" },
-  "6": { id: 6, name: "Beatriz Lima", belt: "blue", email: "beatriz@email.com", phone: "+55 11 98765-4326", joinDate: "2023-08-15", birthDate: "1997-09-22" },
-  "7": { id: 7, name: "Rafael Souza", belt: "black", email: "rafael@email.com", phone: "+55 11 98765-4327", joinDate: "2020-01-05", birthDate: "1988-12-01" },
-  "8": { id: 8, name: "Julia Martins", belt: "purple", email: "julia@email.com", phone: "+55 11 98765-4328", joinDate: "2023-03-20", birthDate: "1994-04-18" },
+  "1": { id: 1, name: "Carlos Silva", belt: "blue", email: "carlos@email.com", phone: "+55 11 98765-4321", joinDate: "2024-01-15", birthDate: "1995-03-20", status: "student", membershipStatus: "active" },
+  "2": { id: 2, name: "Ana Santos", belt: "white", email: "ana@email.com", phone: "+55 11 98765-4322", joinDate: "2024-01-20", birthDate: "1998-07-15", status: "trial" },
+  "3": { id: 3, name: "Pedro Costa", belt: "purple", email: "pedro@email.com", phone: "+55 11 98765-4323", joinDate: "2024-01-22", birthDate: "1992-11-10", status: "student", membershipStatus: "active" },
+  "4": { id: 4, name: "Maria Oliveira", belt: "white", email: "maria@email.com", phone: "+55 11 98765-4324", joinDate: "2024-01-25", birthDate: "2000-05-30", status: "trial" },
+  "5": { id: 5, name: "João Ferreira", belt: "brown", email: "joao@email.com", phone: "+55 11 98765-4325", joinDate: "2023-06-10", birthDate: "1990-02-14", status: "student", membershipStatus: "frozen" },
+  "6": { id: 6, name: "Beatriz Lima", belt: "blue", email: "beatriz@email.com", phone: "+55 11 98765-4326", joinDate: "2023-08-15", birthDate: "1997-09-22", status: "student", membershipStatus: "active" },
+  "7": { id: 7, name: "Rafael Souza", belt: "black", email: "rafael@email.com", phone: "+55 11 98765-4327", joinDate: "2020-01-05", birthDate: "1988-12-01", status: "student", membershipStatus: "inactive" },
+  "8": { id: 8, name: "Julia Martins", belt: "purple", email: "julia@email.com", phone: "+55 11 98765-4328", joinDate: "2023-03-20", birthDate: "1994-04-18", status: "student", membershipStatus: "active" },
 };
 
 const attendanceData = [
@@ -114,7 +115,12 @@ export default function StudentDetail() {
             </div>
             <div className="flex justify-between py-2">
               <span className="text-muted-foreground">Status</span>
-              <span className="font-medium text-accent">Active</span>
+              <Badge variant={student.status === "trial" ? "secondary" : "default"}>
+                {student.status === "trial" 
+                  ? "Trial" 
+                  : student.membershipStatus?.charAt(0).toUpperCase() + student.membershipStatus?.slice(1)
+                }
+              </Badge>
             </div>
           </CardContent>
         </Card>
