@@ -64,7 +64,7 @@ serve(async (req: Request) => {
     console.log(`Fetching student with ID: ${studentId}`);
     const { data: student, error: studentError } = await supabase
       .from("students")
-      .select("name, email")
+      .select("name, email, stripe_customer_id")
       .eq("id", studentId)
       .single();
 
@@ -81,7 +81,7 @@ serve(async (req: Request) => {
     console.log(`Fetching plan with ID: ${planId}`);
     const { data: plan, error: planError } = await supabase
       .from("membership_plans")
-      .select("name, price")
+      .select("name, price, period")
       .eq("id", planId)
       .single();
 
@@ -94,13 +94,23 @@ serve(async (req: Request) => {
     }
     console.log("Plan found:", plan);
 
-    debugStage = "create-stripe-customer";
-    console.log("Creating Stripe customer...");
-    const customer = await stripe.customers.create({
-      email: student.email,
-      name: student.name,
-    });
-    console.log("Stripe customer created:", customer.id);
+    debugStage = "create-or-retrieve-stripe-customer";
+    console.log("Creating or retrieving Stripe customer...");
+    
+    // Check if student already has a Stripe customer ID
+    let customerId = student.stripe_customer_id;
+    
+    if (!customerId) {
+      // Create new customer if none exists
+      const customer = await stripe.customers.create({
+        email: student.email,
+        name: student.name,
+      });
+      customerId = customer.id;
+      console.log("New Stripe customer created:", customerId);
+    } else {
+      console.log("Using existing Stripe customer:", customerId);
+    }
 
     debugStage = "create-checkout-session";
     console.log("Creating Stripe checkout session...");
@@ -112,6 +122,7 @@ serve(async (req: Request) => {
             currency: "usd",
             product_data: {
               name: plan.name,
+              description: `${plan.period} membership`,
             },
             unit_amount: Math.round(parseFloat(plan.price) * 100),
           },
@@ -121,8 +132,17 @@ serve(async (req: Request) => {
       mode: "payment",
       success_url: `${siteUrl}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${siteUrl}/payment-cancelled`,
-      customer: customer.id,
+      customer: customerId,
       client_reference_id: studentId.toString(),
+      // Save payment method for future use
+      payment_intent_data: {
+        setup_future_usage: "off_session",
+      },
+      // Keep billing info updated
+      customer_update: {
+        address: "auto",
+        name: "auto",
+      },
       metadata: {
         studentId: studentId.toString(),
         planId: planId.toString(),

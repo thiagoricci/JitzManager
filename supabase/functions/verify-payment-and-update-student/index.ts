@@ -83,13 +83,14 @@ serve(async (req) => {
       });
     }
 
-    // 5. Update the student's membership_plan_id and membership_status to 'active' in the database
+    // 5. Update the student's membership_plan_id, membership_status, and save stripe_customer_id
     const { error: updateError } = await supabase
       .from("students")
       .update({
         membership_plan_id: parseInt(planId, 10),
         membership_status: "active",
         status: "student", // Ensure status is 'student' when active
+        stripe_customer_id: session.customer as string, // Save customer ID for future payments
       })
       .eq("id", studentId);
 

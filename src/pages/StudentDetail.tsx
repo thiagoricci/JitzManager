@@ -39,6 +39,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import StudentProfileCard from "@/components/StudentProfileCard";
 import PersonalInformationCard from "@/components/PersonalInformationCard";
 import { loadStripe } from "@stripe/stripe-js";
+import ActivateStudentDialog from "@/components/ActivateStudentDialog";
 
 export default function StudentDetail() {
   const { id } = useParams();
@@ -431,75 +432,9 @@ export default function StudentDetail() {
                 <Award className="h-5 w-5 text-primary" />
                 Membership Info
               </CardTitle>
-              <Dialog
-                open={isDialogOpen}
-                onOpenChange={(open) => {
-                  setIsDialogOpen(open);
-                  if (!open) setPendingStatus(null);
-                }}
-              >
-                <DialogTrigger asChild>
-                  <Button variant="ghost" size="icon">
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>
-                      {student.status === "trial" || !student.membership_plan_id
-                        ? "Activate Student"
-                        : "Update Membership"}
-                    </DialogTitle>
-                    <DialogDescription>
-                      {student.status === "trial" || !student.membership_plan_id
-                        ? "Select a membership plan to activate this student. Payment will be required."
-                        : "Change the membership plan for this student. This will start a new subscription."}
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    <div className="grid gap-2">
-                      <Select
-                        value={selectedPlan}
-                        onValueChange={setSelectedPlan}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a plan" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {membershipPlans?.map((plan) => (
-                            <SelectItem
-                              key={plan.id}
-                              value={plan.id.toString()}
-                            >
-                              {plan.name} -{" "}
-                              {plan.price === "0" || plan.price === "0.00"
-                                ? "Free"
-                                : plan.price}
-                              /{plan.period}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button
-                      variant="outline"
-                      onClick={() => setIsDialogOpen(false)}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      onClick={handleUpdateMembership}
-                      disabled={createCheckoutSessionMutation.isPending}
-                    >
-                      {createCheckoutSessionMutation.isPending
-                        ? "Redirecting..."
-                        : "Proceed to Payment"}
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
+              <Button variant="ghost" size="icon" onClick={() => setIsDialogOpen(true)}>
+                <Edit className="h-4 w-4" />
+              </Button>
             </CardHeader>
             <CardContent className="space-y-4 pt-4">
               <div className="flex justify-between py-2 border-b border-border">
@@ -556,6 +491,21 @@ export default function StudentDetail() {
           </Card>
         </div>
       </div>
+
+      {/* Activation Dialog */}
+      <ActivateStudentDialog
+        open={isDialogOpen}
+        onOpenChange={(open) => {
+          setIsDialogOpen(open);
+          if (!open) setPendingStatus(null);
+        }}
+        plans={membershipPlans || []}
+        selectedPlanId={selectedPlan}
+        onSelectPlan={setSelectedPlan}
+        onProceedToPayment={handleUpdateMembership}
+        isProcessing={createCheckoutSessionMutation.isPending}
+        studentName={student.name || "Unknown Student"}
+      />
     </div>
   );
 }
