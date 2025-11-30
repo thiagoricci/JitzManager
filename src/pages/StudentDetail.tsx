@@ -161,6 +161,7 @@ export default function StudentDetail() {
 
       if (!response.ok) {
         const errorBody = await response.text();
+        console.error("create-checkout-session failed", response.status, errorBody);
         let errorMessage = "An unexpected error occurred.";
         try {
           const jsonError = JSON.parse(errorBody);
