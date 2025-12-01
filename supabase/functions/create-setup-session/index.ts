@@ -180,15 +180,17 @@ serve(async (req: Request) => {
   } catch (error) {
     console.error("Caught error at stage", debugStage, ":", error);
     
-    let errorDetails = {};
+    let errorDetails: Record<string, any> = {};
     if (error instanceof Error) {
       errorDetails = {
         message: error.message,
         stack: error.stack,
         name: error.name,
       };
+    } else if (typeof error === 'object' && error !== null) {
+      errorDetails = { ...error as Record<string, any> };
     } else {
-      errorDetails = { ...error };
+      errorDetails = { error: String(error) };
     }
 
     return new Response(

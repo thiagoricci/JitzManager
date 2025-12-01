@@ -94,7 +94,7 @@ serve(async (req: Request) => {
       stripeOptions
     );
 
-    const formattedPaymentMethods = paymentMethods.data.map((pm) => ({
+    const formattedPaymentMethods = paymentMethods.data.map((pm: Stripe.PaymentMethod) => ({
       id: pm.id,
       brand: pm.card?.brand,
       last4: pm.card?.last4,

@@ -39,11 +39,11 @@ serve(async (req) => {
     // 1. Fetch student and organization to get the Stripe account ID
     const { data: studentOrg, error: studentOrgError } = await supabase
       .from("students")
-      .select("organization_id, organizations(stripe_account_id)")
+      .select("organization_id, organizations!inner(stripe_account_id)")
       .eq("id", studentId)
       .single();
 
-    if (studentOrgError || !studentOrg || !studentOrg.organizations?.stripe_account_id) {
+    if (studentOrgError || !studentOrg) {
       return new Response(
         JSON.stringify({ error: "Could not find student or linked Stripe account" }),
         {
@@ -53,7 +53,19 @@ serve(async (req) => {
       );
     }
 
-    const stripeAccountId = studentOrg.organizations.stripe_account_id;
+    // Extract stripe_account_id from the organizations object
+    const orgData = studentOrg.organizations as any;
+    const stripeAccountId = orgData?.stripe_account_id;
+    
+    if (!stripeAccountId) {
+      return new Response(
+        JSON.stringify({ error: "Stripe account not configured for this organization" }),
+        {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
 
     // 2. Fetch the checkout session from Stripe using the connected account
     const session = await stripe.checkout.sessions.retrieve(sessionId, {
