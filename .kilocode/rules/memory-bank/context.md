@@ -11,6 +11,7 @@ The project has evolved into a comprehensive BJJ academy management system with 
   - Added functionality to add and manage payment methods for students.
   - Created Supabase Edge Functions to handle Stripe webhooks, create checkout sessions, charge students, and delete payment methods.
   - Added `PaymentSuccess` and `PaymentCancelled` pages to handle post-payment redirects.
+  - Fixed Stripe Connect integration to only allow login to existing Stripe accounts (prevents new account creation flow).
 - **Student Membership Management:**
   - Developed a dialog for activating and changing student memberships.
   - Added a payment history view to the student profile.
