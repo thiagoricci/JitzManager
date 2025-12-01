@@ -44,18 +44,18 @@ serve(async (req) => {
       );
     }
 
-    // Get the user's profile to find their organization
-    const { data: profile, error: profileError } = await supabase
-      .from("profiles")
-      .select("organization_id")
-      .eq("id", user.id)
-      .single();
+    // Get organization and role from JWT
+    const organizationId = user.app_metadata?.organization_id;
+    const userRole = user.app_metadata?.role;
 
-    if (profileError || !profile?.organization_id) {
+    // Ensure user is an admin of an organization
+    if (userRole !== "admin" || !organizationId) {
       return new Response(
-        JSON.stringify({ error: "User has no organization" }),
+        JSON.stringify({
+          error: "User is not an admin or has no organization",
+        }),
         {
-          status: 400,
+          status: 403, // Forbidden
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
@@ -63,7 +63,7 @@ serve(async (req) => {
 
     // Parse request body - expecting the authorization code from OAuth
     const { code, state } = await req.json();
-    
+
     if (!code) {
       return new Response(
         JSON.stringify({ error: "Authorization code is required" }),
@@ -78,7 +78,7 @@ serve(async (req) => {
     if (state) {
       try {
         const stateData = JSON.parse(atob(state));
-        if (stateData.organization_id !== profile.organization_id) {
+        if (stateData.organization_id !== organizationId) {
           return new Response(
             JSON.stringify({ error: "Invalid state parameter" }),
             {
@@ -134,7 +134,7 @@ serve(async (req) => {
     const { error: updateError } = await supabase
       .from("organizations")
       .update({ stripe_account_id: connectedAccountId })
-      .eq("id", profile.organization_id);
+      .eq("id", organizationId);
 
     if (updateError) {
       console.error("Error updating organization:", updateError);

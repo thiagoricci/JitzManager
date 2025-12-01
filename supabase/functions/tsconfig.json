@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "lib": ["esnext"],
+    "lib": ["esnext", "deno.ns"],
     "target": "es2020",
     "module": "es2020",
     "moduleResolution": "node",
@@ -10,8 +10,7 @@
     "moduleDetection": "force",
     "allowJs": true,
     "types": [
-      "node",
-      "deno"
+      "node"
     ],
     "baseUrl": ".",
     "paths": {
