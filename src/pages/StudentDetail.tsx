@@ -110,12 +110,18 @@ export default function StudentDetail() {
       return response.json();
     },
     onSuccess: async (data) => {
-      const { sessionId } = data;
+      const { sessionId, stripeAccountId } = data;
+      // When using Stripe Connect, we need to pass the connected account ID
       const stripe = await loadStripe(
-        import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
+        import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY,
+        stripeAccountId ? { stripeAccount: stripeAccountId } : undefined
       );
       if (stripe && sessionId) {
-        await stripe.redirectToCheckout({ sessionId });
+        const { error } = await stripe.redirectToCheckout({ sessionId });
+        if (error) {
+          console.error("Stripe redirect error:", error);
+          toast.error(`Payment method setup redirect failed: ${error.message}`);
+        }
       } else {
         toast.error("Failed to initialize Stripe or missing session ID.");
       }
@@ -364,12 +370,18 @@ export default function StudentDetail() {
       return response.json();
     },
     onSuccess: async (data) => {
-      const { sessionId } = data;
+      const { sessionId, stripeAccountId } = data;
+      // When using Stripe Connect, we need to pass the connected account ID
       const stripe = await loadStripe(
-        import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
+        import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY,
+        stripeAccountId ? { stripeAccount: stripeAccountId } : undefined
       );
       if (stripe && sessionId) {
-        await stripe.redirectToCheckout({ sessionId });
+        const { error } = await stripe.redirectToCheckout({ sessionId });
+        if (error) {
+          console.error("Stripe redirect error:", error);
+          toast.error(`Payment redirect failed: ${error.message}`);
+        }
       } else {
         toast.error("Failed to initialize Stripe or missing session ID.");
       }

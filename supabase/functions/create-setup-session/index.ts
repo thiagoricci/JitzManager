@@ -98,11 +98,28 @@ serve(async (req: Request) => {
     // Check if student already has a Stripe customer ID
     let customerId = student.stripe_customer_id;
     
+    // Verify the customer exists on the connected account
+    if (customerId) {
+      try {
+        await stripe.customers.retrieve(customerId, {
+          stripeAccount: organization.stripe_account_id,
+        });
+        console.log("Existing customer verified on connected account");
+      } catch (verifyError: any) {
+        console.log("Existing customer not found on connected account, will create new one:", verifyError.message);
+        customerId = null;
+      }
+    }
+    
     if (!customerId) {
       // Create new customer on the connected account
       const customer = await stripe.customers.create({
-        email: student.email,
+        email: student.email || undefined,
         name: student.name,
+        metadata: {
+          studentId: studentId.toString(),
+          organizationId: organizationId.toString(),
+        },
       }, {
         stripeAccount: organization.stripe_account_id,
       });
@@ -154,7 +171,10 @@ serve(async (req: Request) => {
     console.log("Session URL:", session.url);
     console.log("This session will ONLY save the payment method, NO charge will be made.");
 
-    return new Response(JSON.stringify({ sessionId: session.id }), {
+    return new Response(JSON.stringify({
+      sessionId: session.id,
+      stripeAccountId: organization.stripe_account_id
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
