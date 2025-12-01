@@ -127,9 +127,22 @@ serve(async (req) => {
     oauthUrl.searchParams.set("scope", "read_write");
     oauthUrl.searchParams.set("redirect_uri", returnUrl);
     oauthUrl.searchParams.set("state", state);
-    // stripe_landing=login forces the login flow instead of registration
-    // This ensures users can only connect existing Stripe accounts, not create new ones
+    
+    // IMPORTANT: Force login-only flow for existing Stripe accounts
+    // stripe_landing=login shows the login page first instead of registration
     oauthUrl.searchParams.set("stripe_landing", "login");
+    
+    // Pre-fill the user's email to help Stripe identify their existing account
+    // This also prevents the "create new account" flow from being the default
+    if (user.email) {
+      oauthUrl.searchParams.set("stripe_user[email]", user.email);
+    }
+    
+    // Set the business name to help identify the connection
+    if (organization.name) {
+      oauthUrl.searchParams.set("stripe_user[business_name]", organization.name);
+    }
+    
     // always_prompt=true ensures the user is always asked to authorize, even if previously connected
     oauthUrl.searchParams.set("always_prompt", "true");
 
