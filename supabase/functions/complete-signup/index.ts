@@ -114,12 +114,25 @@ serve(async (req: Request) => {
       .upsert({
         id: userId,
         organization_id: organizationId,
-        role: "owner",
+        role: "admin",
       });
 
     if (profileError) throw profileError;
 
-    // 5. Create or Update Platform Subscription
+    // 5. Update user metadata in JWT
+    const { error: metadataError } = await supabase.auth.admin.updateUserById(
+      userId,
+      {
+        app_metadata: {
+          organization_id: organizationId,
+          role: "admin",
+        },
+      }
+    );
+
+    if (metadataError) throw metadataError;
+
+    // 6. Create or Update Platform Subscription
     const { error: subError } = await supabase
       .from("platform_subscriptions")
       .upsert({
@@ -134,7 +147,7 @@ serve(async (req: Request) => {
 
     if (subError) throw subError;
 
-    // 6. Update Stripe Customer Metadata
+    // 7. Update Stripe Customer Metadata
     await stripe.customers.update(customerId, {
       metadata: {
         organizationId: organizationId,
