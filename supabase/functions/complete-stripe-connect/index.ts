@@ -62,21 +62,11 @@ serve(async (req) => {
     }
 
     // Parse request body - expecting the authorization code from OAuth
-    const { code, state, redirect_uri } = await req.json();
+    const { code, state } = await req.json();
 
     if (!code) {
       return new Response(
         JSON.stringify({ error: "Authorization code is required" }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    if (!redirect_uri) {
-      return new Response(
-        JSON.stringify({ error: "Redirect URI is required" }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -120,12 +110,14 @@ serve(async (req) => {
     });
 
     // Exchange the authorization code for an access token and account ID
-    // IMPORTANT: redirect_uri must match what was used in the authorization request
+    // Note: redirect_uri is NOT required for the token exchange per Stripe OAuth docs
+    // Only grant_type and code are required
     console.log("Exchanging authorization code for access token...");
+    console.log("Code received:", code ? `${code.substring(0, 10)}...` : "none");
+    
     const response = await stripe.oauth.token({
       grant_type: "authorization_code",
       code: code,
-      redirect_uri: redirect_uri,
     });
 
     const connectedAccountId = response.stripe_user_id;
