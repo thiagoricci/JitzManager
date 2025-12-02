@@ -11,6 +11,5 @@
       "indentWidth": 2,
       "singleQuote": false
     }
-  },
-  "importMap": "../import_map.json"
+  }
 }
