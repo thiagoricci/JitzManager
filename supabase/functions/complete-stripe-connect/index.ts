@@ -93,6 +93,70 @@ serve(async (req) => {
       }
     }
 
+    // Check if organization already has a Stripe account connected
+    const { data: organization, error: orgError } = await supabase
+      .from("organizations")
+      .select("stripe_account_id")
+      .eq("id", organizationId)
+      .single();
+
+    if (orgError) {
+      console.error("Error fetching organization:", orgError);
+      return new Response(
+        JSON.stringify({ error: "Failed to fetch organization" }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // If already connected, return success with existing account info
+    if (organization?.stripe_account_id) {
+      console.log("Organization already has Stripe account connected:", organization.stripe_account_id);
+      
+      // Initialize Stripe to get account details
+      const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
+      if (stripeSecretKey) {
+        try {
+          const stripe = new Stripe(stripeSecretKey, {
+            apiVersion: "2023-10-16",
+          });
+          const account = await stripe.accounts.retrieve(organization.stripe_account_id);
+          
+          return new Response(
+            JSON.stringify({
+              success: true,
+              accountId: organization.stripe_account_id,
+              chargesEnabled: account.charges_enabled,
+              payoutsEnabled: account.payouts_enabled,
+              businessName: account.business_profile?.name || account.settings?.dashboard?.display_name,
+              alreadyConnected: true,
+            }),
+            {
+              status: 200,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
+        } catch (e) {
+          console.error("Error fetching existing Stripe account:", e);
+        }
+      }
+      
+      // Return basic success if we can't fetch account details
+      return new Response(
+        JSON.stringify({
+          success: true,
+          accountId: organization.stripe_account_id,
+          alreadyConnected: true,
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
     // Initialize Stripe
     const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeSecretKey) {

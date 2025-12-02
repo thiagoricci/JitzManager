@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { CheckCircle, XCircle, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -20,9 +20,18 @@ export default function StripeConnectCallback() {
   const [status, setStatus] = useState<"loading" | "success" | "error" | "denied">("loading");
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [businessName, setBusinessName] = useState<string>("");
+  
+  // Use a ref to track if we've already processed the callback
+  // This prevents multiple API calls when the effect re-runs
+  const hasProcessedRef = useRef(false);
 
   useEffect(() => {
     const handleCallback = async () => {
+      // Prevent multiple executions - OAuth codes are single-use
+      if (hasProcessedRef.current) {
+        return;
+      }
+      
       // Check for OAuth error (user denied access)
       const error = searchParams.get("error");
       const errorDescription = searchParams.get("error_description");
@@ -55,6 +64,9 @@ export default function StripeConnectCallback() {
       }
 
       try {
+        // Mark as processed BEFORE making the API call to prevent race conditions
+        hasProcessedRef.current = true;
+        
         // Call the complete-stripe-connect function to exchange code for account
         // Note: redirect_uri is NOT required for the token exchange per Stripe OAuth docs
         const { data, error: invokeError } = await supabase.functions.invoke(
@@ -84,6 +96,8 @@ export default function StripeConnectCallback() {
         console.error("Error completing Stripe Connect:", err);
         setStatus("error");
         setErrorMessage(err instanceof Error ? err.message : "An unexpected error occurred");
+        // Reset the flag on error so user can retry
+        hasProcessedRef.current = false;
       }
     };
 
