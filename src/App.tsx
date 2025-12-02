@@ -24,6 +24,8 @@ import PaymentCancelled from "./pages/PaymentCancelled";
 import StripeConnectCallback from "./pages/StripeConnectCallback";
 import PasswordRecovery from "./pages/PasswordRecovery";
 import ResetPassword from "./pages/ResetPassword";
+import AdminLogin from "./pages/AdminLogin";
+import AdminDashboard from "./pages/AdminDashboard";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -43,6 +45,9 @@ const App = () => (
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/onboarding" element={<Onboarding />} />
             
+            <Route path="/admin/login" element={<AdminLogin />} />
+            <Route path="/admin" element={<AdminDashboard />} />
+
             <Route path="/" element={<Landing />} />
             <Route path="/dashboard" element={<ProtectedRoute><Index /></ProtectedRoute>} />
             <Route path="/students" element={<ProtectedRoute><Layout><Students /></Layout></ProtectedRoute>} />

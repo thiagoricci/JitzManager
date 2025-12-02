@@ -21,20 +21,43 @@ export default function Onboarding() {
     setLoading(true);
 
     try {
-      // 1. Create Organization
-      const slug = orgName.toLowerCase().replace(/[^a-z0-9]/g, "-");
-      const { data: org, error: orgError } = await supabase
+      // 1. Check for existing organization
+      const { data: existingOrg } = await supabase
         .from("organizations")
-        .insert([{ name: orgName, slug, owner_id: user.id }])
-        .select()
-        .single();
+        .select("id")
+        .eq("owner_id", user.id)
+        .maybeSingle();
 
-      if (orgError) throw orgError;
+      const slug = orgName.toLowerCase().replace(/[^a-z0-9]/g, "-");
+      let orgId;
+
+      if (existingOrg) {
+        // Update existing organization
+        const { data: org, error: orgError } = await supabase
+          .from("organizations")
+          .update({ name: orgName, slug })
+          .eq("id", existingOrg.id)
+          .select()
+          .single();
+
+        if (orgError) throw orgError;
+        orgId = org.id;
+      } else {
+        // Create new organization
+        const { data: org, error: orgError } = await supabase
+          .from("organizations")
+          .insert([{ name: orgName, slug, owner_id: user.id }])
+          .select()
+          .single();
+
+        if (orgError) throw orgError;
+        orgId = org.id;
+      }
 
       // 2. Create or Update Profile linked to Organization
       const { error: profileError } = await supabase.from("profiles").upsert({
         id: user.id,
-        organization_id: org.id,
+        organization_id: orgId,
         role: "owner",
       });
 
