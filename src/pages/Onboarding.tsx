@@ -49,7 +49,7 @@ export default function Onboarding() {
       await new Promise(resolve => setTimeout(resolve, 100));
       
       // Only redirect if we have successfully loaded the organization data
-      navigate("/", { replace: true });
+      navigate("/dashboard", { replace: true });
     } catch (error: any) {
       toast.error(error.message || "Error creating organization");
     } finally {
