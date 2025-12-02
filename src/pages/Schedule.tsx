@@ -76,7 +76,7 @@ export default function Schedule() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState<any>(null);
-  const { user } = useAuth();
+  const { user, organization } = useAuth();
   const queryClient = useQueryClient();
 
   const addForm = useForm<z.infer<typeof addFormSchema>>({
@@ -94,11 +94,13 @@ export default function Schedule() {
   });
 
   const { data: schedules, isLoading } = useQuery({
-    queryKey: ["schedules"],
+    queryKey: ["schedules", organization?.id],
+    enabled: !!organization?.id,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("schedules")
         .select("*")
+        .eq("organization_id", organization!.id)
         .order("day_of_week")
         .order("start_time");
 

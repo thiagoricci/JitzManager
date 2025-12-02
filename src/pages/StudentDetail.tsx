@@ -136,12 +136,14 @@ export default function StudentDetail() {
   };
 
   const { data: student, isLoading: isLoadingStudent } = useQuery({
-    queryKey: ["student", id],
+    queryKey: ["student", id, organization?.id],
+    enabled: !!id && !!organization?.id,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("students")
         .select("*, membership_plans(name)")
         .eq("id", id)
+        .eq("organization_id", organization!.id)
         .single();
       
       if (error) throw error;
@@ -150,11 +152,13 @@ export default function StudentDetail() {
   });
 
   const { data: membershipPlans } = useQuery({
-    queryKey: ["membershipPlans"],
+    queryKey: ["membershipPlans", organization?.id],
+    enabled: !!organization?.id,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("membership_plans")
         .select("*")
+        .eq("organization_id", organization!.id)
         .order("price");
       
       if (error) throw error;
@@ -163,12 +167,14 @@ export default function StudentDetail() {
   });
 
   const { data: attendanceHistory } = useQuery({
-    queryKey: ["student-attendance", id, organization?.timezone],
+    queryKey: ["student-attendance", id, organization?.timezone, organization?.id],
+    enabled: !!id && !!organization?.id,
     queryFn: async () => {
       const startOfWeek = getWeekStartInTimezone(organization?.timezone);
       const { data, error } = await supabase
         .from("attendance")
         .select("*, schedules(name, start_time)")
+        .eq("organization_id", organization!.id)
         .eq("student_id", id)
         .gte("date", startOfWeek)
         .order("date", { ascending: false })
@@ -181,11 +187,13 @@ export default function StudentDetail() {
   });
 
   const { data: totalClasses } = useQuery({
-    queryKey: ["totalClasses", id],
+    queryKey: ["totalClasses", id, organization?.id],
+    enabled: !!id && !!organization?.id,
     queryFn: async () => {
       const { count, error } = await supabase
         .from("attendance")
         .select("*", { count: "exact", head: true })
+        .eq("organization_id", organization!.id)
         .eq("student_id", id);
 
       if (error) throw error;

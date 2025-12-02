@@ -139,6 +139,7 @@ export default function StripeConnectCallback() {
           },
           headers: {
             Authorization: `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
           },
         }
       );

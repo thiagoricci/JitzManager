@@ -80,7 +80,8 @@ export default function Students() {
   });
 
   const { data, isLoading } = useQuery({
-    queryKey: ["students", sortConfig, currentPage],
+    queryKey: ["students", sortConfig, currentPage, organization?.id],
+    enabled: !!organization?.id,
     queryFn: async () => {
       const from = (currentPage - 1) * studentsPerPage;
       const to = from + studentsPerPage - 1;
@@ -88,6 +89,7 @@ export default function Students() {
       const { data, error, count } = await supabase
         .from("students")
         .select("*, membership_plans(name)", { count: "exact" })
+        .eq("organization_id", organization!.id)
         .order(sortConfig.key, { ascending: sortConfig.direction === "asc" })
         .range(from, to);
 

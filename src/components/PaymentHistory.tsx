@@ -21,12 +21,13 @@ export default function PaymentHistory({ studentId }: PaymentHistoryProps) {
   const { organization } = useAuth();
 
   const { data: payments, isLoading } = useQuery({
-    queryKey: ["student-payments", studentId],
+    queryKey: ["student-payments", studentId, organization?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("payments")
         .select("*")
         .eq("student_id", studentId)
+        .eq("organization_id", organization.id)
         .order("date", { ascending: false });
 
       if (error) throw error;

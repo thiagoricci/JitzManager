@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "lib": ["esnext", "deno.ns"],
+    "lib": ["esnext"],
     "target": "es2020",
     "module": "es2020",
     "moduleResolution": "node",
@@ -13,15 +13,7 @@
       "node"
     ],
     "baseUrl": ".",
-    "paths": {
-      "@supabase/functions-js": ["../import_map.json"],
-      "stripe": ["../import_map.json"],
-      "supabase-js": ["../import_map.json"],
-      "std/": ["../import_map.json"]
-    },
     "resolveJsonModule": true
   },
-  "files": [
-    "deno.d.ts"
-  ]
+  "include": ["./**/*.ts"]
 }

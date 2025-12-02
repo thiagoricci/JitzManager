@@ -137,11 +137,13 @@ export default function Attendance() {
 
   // Fetch all active students
   const { data: students, isLoading: isLoadingStudents } = useQuery({
-    queryKey: ["students", "active"],
+    queryKey: ["students", "active", organization?.id],
+    enabled: !!organization?.id,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("students")
         .select("*")
+        .eq("organization_id", organization!.id)
         .eq("status", "student")
         .eq("membership_status", "active")
         .order("name");
@@ -153,11 +155,13 @@ export default function Attendance() {
 
   // Fetch today's schedules
   const { data: todaysSchedules } = useQuery({
-    queryKey: ["schedules", currentDayOfWeek],
+    queryKey: ["schedules", currentDayOfWeek, organization?.id],
+    enabled: !!organization?.id,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("schedules")
         .select("*")
+        .eq("organization_id", organization!.id)
         .eq("day_of_week", currentDayOfWeek)
         .order("start_time");
       
@@ -209,12 +213,13 @@ export default function Attendance() {
 
   // Fetch attendance for current class
   const { data: classAttendance, isLoading: isLoadingAttendance } = useQuery({
-    queryKey: ["attendance", today, currentClass?.id],
-    enabled: !!currentClass,
+    queryKey: ["attendance", today, currentClass?.id, organization?.id],
+    enabled: !!currentClass && !!organization?.id,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("attendance")
         .select("*, students(*)")
+        .eq("organization_id", organization!.id)
         .eq("date", today)
         .eq("schedule_id", currentClass.id)
         .order("created_at", { ascending: false });

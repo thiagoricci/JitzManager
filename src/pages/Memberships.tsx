@@ -24,18 +24,20 @@ import { useNavigate } from "react-router-dom";
 
 export default function Memberships() {
   const queryClient = useQueryClient();
-  const { profile } = useAuth();
+  const { profile, organization } = useAuth();
   const navigate = useNavigate();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
   const [planToDelete, setPlanToDelete] = useState<any>(null);
 
   const { data: plans, isLoading: isLoadingPlans } = useQuery({
-    queryKey: ["membershipPlans"],
+    queryKey: ["membershipPlans", organization?.id],
+    enabled: !!organization?.id,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("membership_plans")
         .select("*")
+        .eq("organization_id", organization!.id)
         .order("price");
       if (error) throw error;
       return data;
@@ -43,11 +45,13 @@ export default function Memberships() {
   });
 
   const { data: students, isLoading: isLoadingStudents } = useQuery({
-    queryKey: ["students"],
+    queryKey: ["students", organization?.id],
+    enabled: !!organization?.id,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("students")
-        .select("membership_plan_id, status, membership_status");
+        .select("membership_plan_id, status, membership_status")
+        .eq("organization_id", organization!.id);
       if (error) throw error;
       return data;
     },

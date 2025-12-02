@@ -15,11 +15,13 @@ import { Button } from "@/components/ui/button";
  export default function Dashboard() {
    const { organization } = useAuth();
    const { data: students, isLoading } = useQuery({
-     queryKey: ["students"],
+     queryKey: ["students", organization?.id],
+     enabled: !!organization?.id,
      queryFn: async () => {
       const { data, error } = await supabase
         .from("students")
         .select("*")
+        .eq("organization_id", organization!.id)
         .order("join_date", { ascending: false });
       
       if (error) throw error;
