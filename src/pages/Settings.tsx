@@ -535,9 +535,9 @@ function StripeConnectCard() {
       const { data, error } = await supabase.functions.invoke(
         "create-stripe-connect-link",
         {
-          body: {
+          body: JSON.stringify({
             returnUrl: `${window.location.origin}/stripe-connect-callback`,
-          },
+          }),
           headers: {
             Authorization: `Bearer ${session.access_token}`,
             "Content-Type": "application/json",
