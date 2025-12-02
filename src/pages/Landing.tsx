@@ -233,8 +233,8 @@ export default function Landing() {
               <ul className="space-y-5">
                 {benefits.map((benefit, index) => (
                   <li key={index} className="flex items-start gap-4">
-                    <div className="h-7 w-7 rounded-full bg-accent/10 flex items-center justify-center shrink-0 mt-0.5">
-                      <Check className="h-4 w-4 text-accent" />
+                    <div className="h-7 w-7 rounded-full bg-green-600/10 flex items-center justify-center shrink-0 mt-0.5">
+                      <Check className="h-4 w-4 text-green-600" />
                     </div>
                     <span className="text-lg">{benefit}</span>
                   </li>

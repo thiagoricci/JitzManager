@@ -62,11 +62,21 @@ serve(async (req) => {
     }
 
     // Parse request body - expecting the authorization code from OAuth
-    const { code, state } = await req.json();
+    const { code, state, redirect_uri } = await req.json();
 
     if (!code) {
       return new Response(
         JSON.stringify({ error: "Authorization code is required" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    if (!redirect_uri) {
+      return new Response(
+        JSON.stringify({ error: "Redirect URI is required" }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -110,9 +120,12 @@ serve(async (req) => {
     });
 
     // Exchange the authorization code for an access token and account ID
+    // IMPORTANT: redirect_uri must match what was used in the authorization request
+    console.log("Exchanging authorization code for access token...");
     const response = await stripe.oauth.token({
       grant_type: "authorization_code",
       code: code,
+      redirect_uri: redirect_uri,
     });
 
     const connectedAccountId = response.stripe_user_id;
@@ -162,9 +175,33 @@ serve(async (req) => {
     );
   } catch (error: unknown) {
     console.error("Error completing Stripe Connect:", error);
-    const errorMessage = error instanceof Error ? error.message : "Internal server error";
+    
+    // Extract detailed error information for better debugging
+    let errorMessage = "Internal server error";
+    let errorCode = "";
+    
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      // Check if it's a Stripe error with additional details
+      const stripeError = error as any;
+      if (stripeError.type) {
+        errorCode = stripeError.type;
+        console.error("Stripe error type:", stripeError.type);
+      }
+      if (stripeError.code) {
+        errorCode = stripeError.code;
+        console.error("Stripe error code:", stripeError.code);
+      }
+      if (stripeError.raw) {
+        console.error("Stripe raw error:", JSON.stringify(stripeError.raw));
+      }
+    }
+    
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({
+        error: errorMessage,
+        code: errorCode || undefined,
+      }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

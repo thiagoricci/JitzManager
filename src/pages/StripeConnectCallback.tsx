@@ -55,11 +55,14 @@ export default function StripeConnectCallback() {
       }
 
       try {
+        // The redirect_uri must match what was used in the authorization request
+        const redirectUri = `${window.location.origin}/stripe-connect-callback`;
+        
         // Call the complete-stripe-connect function to exchange code for account
         const { data, error: invokeError } = await supabase.functions.invoke(
           "complete-stripe-connect",
           {
-            body: { code, state },
+            body: { code, state, redirect_uri: redirectUri },
             headers: {
               Authorization: `Bearer ${session.access_token}`,
             },
