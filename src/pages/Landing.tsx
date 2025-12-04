@@ -98,7 +98,7 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-sm">
+      <header className="sticky top-0 z-50 border-b bg-background md:bg-background/80 md:backdrop-blur-sm">
         <div className="container mx-auto px-4 h-16 flex justify-between items-center">
           <h1 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
             Jiu-Jitsu Manager
