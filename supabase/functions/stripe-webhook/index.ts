@@ -276,11 +276,24 @@ serve(async (req) => {
           const amount = invoice.amount_due ? invoice.amount_due / 100 : 0;
 
           let failureReason = "Payment failed";
-          if (invoice.last_finalization_error?.message) {
+          let failureCode: string | null = null;
+
+          // Retrieve the charge to get the exact Stripe decline code
+          const chargeId = invoice.charge as string;
+          if (chargeId) {
+            try {
+              const charge = await stripe.charges.retrieve(chargeId, stripeOptions);
+              failureCode = charge.failure_code ?? null;
+              failureReason = charge.failure_message || failureReason;
+            } catch (e) {
+              console.error("Error retrieving charge for decline code:", e);
+            }
+          }
+          if (failureReason === "Payment failed" && invoice.last_finalization_error?.message) {
             failureReason = invoice.last_finalization_error.message;
           }
 
-          console.log(`Recording failed payment for student: ${studentId}, amount: ${amount}, reason: ${failureReason}`);
+          console.log(`Recording failed payment for student: ${studentId}, amount: ${amount}, reason: ${failureReason}, code: ${failureCode}`);
 
           const { data: paymentData, error: paymentError } = await supabaseAdmin
             .from("payments")
@@ -291,6 +304,8 @@ serve(async (req) => {
               date: new Date().toISOString(),
               status: "failed",
               failure_reason: failureReason,
+              failure_code: failureCode,
+              stripe_invoice_id: invoice.id,
             })
             .select();
 
@@ -300,6 +315,19 @@ serve(async (req) => {
             console.log(`Failed payment recorded for student: ${studentId}`, paymentData);
           }
         }
+      }
+    } else if (event.type === "account.updated") {
+      // Fires when a connected Express account completes (or updates) Stripe onboarding.
+      const account = event.data.object as Stripe.Account;
+      console.log(`account.updated for ${account.id}, charges_enabled=${account.charges_enabled}`);
+
+      const { error } = await supabaseAdmin
+        .from("organizations")
+        .update({ stripe_charges_enabled: account.charges_enabled })
+        .eq("stripe_account_id", account.id);
+
+      if (error) {
+        console.error("Error updating stripe_charges_enabled:", error);
       }
     } else if (event.type === "payment_intent.payment_failed") {
       const paymentIntent = event.data.object as Stripe.PaymentIntent;

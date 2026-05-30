@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.42.0";
 import Stripe from "https://esm.sh/stripe@14.21.0";
 import { corsHeaders } from "../_shared/cors.ts";
 
@@ -57,7 +57,7 @@ serve(async (req: Request) => {
       apiVersion: "2023-10-16",
     });
 
-    const siteUrl = Deno.env.get("SITE_URL");
+    const siteUrl = Deno.env.get("SITE_URL")?.replace(/\/$/, "");
     if (!siteUrl) {
       console.error("SITE_URL is not configured");
       return new Response(

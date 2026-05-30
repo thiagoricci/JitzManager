@@ -19,102 +19,71 @@ export default function StripeConnectCallback() {
   const { session, refreshProfile } = useAuth();
   const [status, setStatus] = useState<"loading" | "success" | "error" | "denied">("loading");
   const [errorMessage, setErrorMessage] = useState<string>("");
-  const [businessName, setBusinessName] = useState<string>("");
-  
-  // Use a ref to track if we've already processed the callback
-  // This prevents multiple API calls when the effect re-runs
   const hasProcessedRef = useRef(false);
 
   useEffect(() => {
     const handleCallback = async () => {
-      // Prevent multiple executions - OAuth codes are single-use
-      if (hasProcessedRef.current) {
-        return;
-      }
+      if (hasProcessedRef.current) return;
 
-      // Check for OAuth error (user denied access)
+      // Stripe sends error=access_denied if the user cancels
       const error = searchParams.get("error");
-      const errorDescription = searchParams.get("error_description");
-      
       if (error) {
-        hasProcessedRef.current = true; // Mark as processed for error cases too
-        if (error === "access_denied") {
-          setStatus("denied");
-          setErrorMessage(errorDescription || "You denied access to your Stripe account");
-        } else {
-          setStatus("error");
-          setErrorMessage(errorDescription || error);
-        }
+        hasProcessedRef.current = true;
+        setStatus(error === "access_denied" ? "denied" : "error");
+        setErrorMessage(searchParams.get("error_description") || error);
         return;
       }
 
-      // Get the authorization code from OAuth callback
+      // Standard OAuth flow — Stripe returns a one-time authorization code
       const code = searchParams.get("code");
       const state = searchParams.get("state");
 
       if (!code) {
-        hasProcessedRef.current = true; // Mark as processed
+        hasProcessedRef.current = true;
         setStatus("error");
-        setErrorMessage("No authorization code provided");
+        setErrorMessage("No authorization code received from Stripe.");
         return;
       }
 
-      // Check if we've already processed this specific code in this session
-      // This persists across component remounts (unlike useRef)
-      const processedCodeKey = `stripe_connect_processed_${code}`;
-      if (sessionStorage.getItem(processedCodeKey)) {
-        hasProcessedRef.current = true;
-        setStatus("success"); // Assume success if we've already processed it
-        setBusinessName("your account"); // Generic name since we don't have the data
-        return;
-      }
+      hasProcessedRef.current = true;
 
       if (!session?.access_token) {
-        // Don't mark as processed - we might get session later
         setStatus("error");
         setErrorMessage("Not authenticated");
         return;
       }
 
       try {
-        // Mark as processed BEFORE making the API call to prevent race conditions
-        hasProcessedRef.current = true;
-        sessionStorage.setItem(processedCodeKey, "true");
-        
-        // Call the complete-stripe-connect function to exchange code for account
-        // Note: redirect_uri is NOT required for the token exchange per Stripe OAuth docs
         const { data, error: invokeError } = await supabase.functions.invoke(
-          "complete-stripe-connect",
+          "exchange-stripe-code",
           {
             body: { code, state },
-            headers: {
-              Authorization: `Bearer ${session.access_token}`,
-            },
+            headers: { Authorization: `Bearer ${session.access_token}` },
           }
         );
 
         if (invokeError) {
-          throw new Error(invokeError.message || "Failed to complete Stripe setup");
+          let message = invokeError.message || "Failed to connect Stripe account";
+          try {
+            const body = await (invokeError as { context?: Response }).context?.json?.();
+            if (body?.error) message = body.error;
+          } catch {
+            // ignore
+          }
+          throw new Error(message);
         }
 
         if (data?.error) {
           throw new Error(data.error);
         }
 
-        // Success! Set status first to stop any re-renders from causing issues
+        await refreshProfile(true);
         setStatus("success");
-        setBusinessName(data?.businessName || "");
         toast.success("Stripe account connected successfully!");
-        
-        // Refresh the profile in the background - don't await to prevent re-render loops
-        // Pass true to silent mode to avoid triggering global loading state which would unmount this component
-        refreshProfile(true).catch(console.error);
-      } catch (err: unknown) {
-        console.error("Error completing Stripe Connect:", err);
+      } catch (err) {
+        console.error("Error connecting Stripe:", err);
         setStatus("error");
-        setErrorMessage(err instanceof Error ? err.message : "An unexpected error occurred");
-        // Don't reset the flag - the code is already consumed
-        // User will need to start a new OAuth flow via "Try Again"
+        setErrorMessage(err instanceof Error ? err.message : "Failed to connect Stripe account");
       }
     };
 
@@ -127,38 +96,23 @@ export default function StripeConnectCallback() {
       toast.error("Not authenticated");
       return;
     }
-
     setStatus("loading");
-
     try {
       const { data, error } = await supabase.functions.invoke(
         "create-stripe-connect-link",
         {
-          body: {
-            returnUrl: `${window.location.origin}/stripe-connect-callback`,
-          },
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            "Content-Type": "application/json",
-          },
+          body: { returnUrl: `${window.location.origin}/stripe-connect-callback` },
+          headers: { Authorization: `Bearer ${session.access_token}` },
         }
       );
-
       if (error || data?.error) {
         throw new Error(data?.error || error?.message || "Failed to create Stripe link");
       }
-
-      // Redirect to Stripe OAuth
       window.location.href = data.url;
-    } catch (err: unknown) {
-      console.error("Error retrying connect:", err);
+    } catch (err) {
       setStatus("error");
       setErrorMessage(err instanceof Error ? err.message : "Failed to connect to Stripe");
     }
-  };
-
-  const handleGoToSettings = () => {
-    navigate("/settings");
   };
 
   return (
@@ -171,9 +125,7 @@ export default function StripeConnectCallback() {
                 <Loader2 className="h-12 w-12 animate-spin text-primary" />
               </div>
               <CardTitle>Connecting Stripe Account</CardTitle>
-              <CardDescription>
-                Please wait while we connect your Stripe account...
-              </CardDescription>
+              <CardDescription>Please wait…</CardDescription>
             </>
           )}
 
@@ -184,12 +136,7 @@ export default function StripeConnectCallback() {
               </div>
               <CardTitle className="text-green-600">Stripe Connected!</CardTitle>
               <CardDescription>
-                {businessName ? (
-                  <>Your Stripe account "{businessName}" has been successfully connected.</>
-                ) : (
-                  <>Your Stripe account has been successfully connected.</>
-                )}
-                {" "}You can now accept payments from your students.
+                Your Stripe account has been connected. You can now collect payments from students.
               </CardDescription>
             </>
           )}
@@ -213,8 +160,7 @@ export default function StripeConnectCallback() {
               </div>
               <CardTitle className="text-yellow-600">Access Denied</CardTitle>
               <CardDescription>
-                You chose not to connect your Stripe account. You can try again
-                whenever you're ready.
+                You chose not to connect your Stripe account. You can try again whenever you're ready.
               </CardDescription>
             </>
           )}
@@ -222,36 +168,16 @@ export default function StripeConnectCallback() {
 
         <CardContent className="flex flex-col gap-3">
           {status === "success" && (
-            <Button onClick={handleGoToSettings} className="w-full">
+            <Button onClick={() => navigate("/settings")} className="w-full">
               Go to Settings
             </Button>
           )}
-
-          {status === "error" && (
+          {(status === "error" || status === "denied") && (
             <>
               <Button onClick={handleRetryConnect} className="w-full">
                 Try Again
               </Button>
-              <Button
-                variant="outline"
-                onClick={handleGoToSettings}
-                className="w-full"
-              >
-                Back to Settings
-              </Button>
-            </>
-          )}
-
-          {status === "denied" && (
-            <>
-              <Button onClick={handleRetryConnect} className="w-full">
-                Connect Stripe Account
-              </Button>
-              <Button
-                variant="outline"
-                onClick={handleGoToSettings}
-                className="w-full"
-              >
+              <Button variant="outline" onClick={() => navigate("/settings")} className="w-full">
                 Back to Settings
               </Button>
             </>

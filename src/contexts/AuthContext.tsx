@@ -16,6 +16,7 @@ type Organization = {
   address: string | null;
   timezone: string;
   stripe_account_id: string | null;
+  stripe_charges_enabled: boolean;
 };
 
 type AuthContextType = {
@@ -89,7 +90,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const { data: orgData, error: orgError } = await supabase
             .from("organizations")
             .select(
-              "id, name, slug, logo_url, address, timezone, stripe_account_id"
+              "id, name, slug, logo_url, address, timezone, stripe_account_id, stripe_charges_enabled"
             )
             .eq("id", profileData.organization_id)
             .single();

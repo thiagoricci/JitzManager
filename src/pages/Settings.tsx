@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Building2, MapPin, Globe, Save, CreditCard, Link, Unlink, Loader2, ExternalLink, Lock, Mail, AlertTriangle } from "lucide-react";
+import { Building2, MapPin, Globe, Save, CreditCard, Link, Unlink, Loader2, ExternalLink, Lock, Mail, AlertTriangle, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -44,6 +44,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { getLocalTimezone } from "@/lib/date";
+import AppearanceCard from "@/components/AppearanceCard";
+import LogoUpload from "@/components/LogoUpload";
 
 const settingsSchema = z.object({
   name: z.string().min(2, "Academy name must be at least 2 characters"),
@@ -178,12 +180,16 @@ export default function Settings() {
                 name="logo_url"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Logo URL</FormLabel>
+                    <FormLabel>Academy Logo</FormLabel>
                     <FormControl>
-                      <Input placeholder="https://..." {...field} />
+                      <LogoUpload
+                        value={field.value || null}
+                        onChange={(url) => field.onChange(url || "")}
+                        organizationId={organization.id}
+                      />
                     </FormControl>
                     <FormDescription>
-                      Provide a direct link to your academy's logo image.
+                      This logo appears in the sidebar and on student-facing pages.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -274,6 +280,7 @@ export default function Settings() {
       </Card>
 
 
+      <AppearanceCard />
       <AccountSettingsCard />
       <StripeConnectCard />
       <DangerZoneCard />
@@ -518,43 +525,46 @@ function AccountSettingsCard() {
 
 function StripeConnectCard() {
   const { organization, session, refreshProfile } = useAuth();
-  const [connecting, setConnecting] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
 
   const isConnected = !!organization?.stripe_account_id;
+  const isReady = !!organization?.stripe_charges_enabled;
 
-  const handleConnectStripe = async () => {
+  const openConnectLink = async () => {
     if (!session?.access_token) {
       toast.error("Not authenticated");
       return;
     }
-
-    setConnecting(true);
-
+    setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke(
         "create-stripe-connect-link",
         {
-          body: JSON.stringify({
-            returnUrl: `${window.location.origin}/stripe-connect-callback`,
-          }),
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            "Content-Type": "application/json",
-          },
+          body: { returnUrl: `${window.location.origin}/stripe-connect-callback` },
+          headers: { Authorization: `Bearer ${session.access_token}` },
         }
       );
-
-      if (error || data?.error) {
-        throw new Error(data?.error || error?.message || "Failed to create Stripe link");
+      if (error) {
+        // Try to extract the actual error message from the response body
+        let message = error.message || "Failed to create Stripe link";
+        try {
+          // FunctionsHttpError exposes the raw response via .context
+          const body = await (error as { context?: Response }).context?.json?.();
+          if (body?.error) message = body.error;
+        } catch {
+          // ignore JSON parse failure
+        }
+        throw new Error(message);
       }
-
-      // Redirect to Stripe onboarding
+      if (data?.error) {
+        throw new Error(data.error);
+      }
       window.location.href = data.url;
     } catch (err: unknown) {
       console.error("Error connecting Stripe:", err);
       toast.error(err instanceof Error ? err.message : "Failed to connect Stripe");
-      setConnecting(false);
+      setLoading(false);
     }
   };
 
@@ -563,24 +573,15 @@ function StripeConnectCard() {
       toast.error("Not authenticated");
       return;
     }
-
     setDisconnecting(true);
-
     try {
       const { data, error } = await supabase.functions.invoke(
         "disconnect-stripe-account",
-        {
-          body: {},
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
-        }
+        { body: {}, headers: { Authorization: `Bearer ${session.access_token}` } }
       );
-
       if (error || data?.error) {
         throw new Error(data?.error || error?.message || "Failed to disconnect Stripe");
       }
-
       await refreshProfile();
       toast.success("Stripe account disconnected");
     } catch (err: unknown) {
@@ -596,26 +597,85 @@ function StripeConnectCard() {
       <CardHeader>
         <CardTitle>Stripe Integration</CardTitle>
         <CardDescription>
-          Connect your existing Stripe account to accept payments from students. You must already have a Stripe account to connect.
+          Connect your Stripe account to collect membership payments from students.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {isConnected ? (
+
+        {/* ── State 1: Not connected ── */}
+        {!isConnected && (
           <>
-            <div className="flex items-center justify-between rounded-lg border border-green-500/50 bg-green-50 dark:bg-green-950/20 p-4">
-              <div className="flex items-center gap-3">
-                <CreditCard className="h-6 w-6 text-green-600" />
-                <div>
-                  <h3 className="font-semibold text-green-600">
-                    Stripe Connected
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    Your academy is ready to accept payments.
-                  </p>
-                </div>
+            <div className="flex items-center gap-3 rounded-lg border border-yellow-500/50 bg-yellow-50 dark:bg-yellow-950/20 p-4">
+              <CreditCard className="h-6 w-6 shrink-0 text-yellow-600" />
+              <div>
+                <h3 className="font-semibold text-yellow-700">Not Connected</h3>
+                <p className="text-sm text-muted-foreground">
+                  You need to connect a Stripe account before you can charge students.
+                </p>
               </div>
             </div>
+            <Button onClick={openConnectLink} disabled={loading} className="w-full">
+              {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Link className="mr-2 h-4 w-4" />}
+              {loading ? "Redirecting…" : "Connect Stripe Account"}
+            </Button>
+          </>
+        )}
 
+        {/* ── State 2: Connected but onboarding incomplete ── */}
+        {isConnected && !isReady && (
+          <>
+            <div className="flex items-center gap-3 rounded-lg border border-orange-500/50 bg-orange-50 dark:bg-orange-950/20 p-4">
+              <Loader2 className="h-6 w-6 shrink-0 text-orange-500" />
+              <div>
+                <h3 className="font-semibold text-orange-700">Setup Incomplete</h3>
+                <p className="text-sm text-muted-foreground">
+                  Your Stripe account is connected but hasn't finished onboarding. Complete the setup to start accepting payments.
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button onClick={openConnectLink} disabled={loading} className="flex-1">
+                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ExternalLink className="mr-2 h-4 w-4" />}
+                {loading ? "Redirecting…" : "Complete Stripe Setup"}
+              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline" disabled={disconnecting} className="flex-1">
+                    {disconnecting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Unlink className="mr-2 h-4 w-4" />}
+                    Disconnect
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Disconnect Stripe Account?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will remove the Stripe account link. You can reconnect at any time.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDisconnectStripe} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                      Disconnect
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          </>
+        )}
+
+        {/* ── State 3: Connected and ready to charge ── */}
+        {isConnected && isReady && (
+          <>
+            <div className="flex items-center gap-3 rounded-lg border border-green-500/50 bg-green-50 dark:bg-green-950/20 p-4">
+              <CreditCard className="h-6 w-6 shrink-0 text-green-600" />
+              <div>
+                <h3 className="font-semibold text-green-700">Stripe Connected</h3>
+                <p className="text-sm text-muted-foreground">
+                  Your academy is verified and ready to accept student payments.
+                </p>
+              </div>
+            </div>
             <div className="flex flex-col sm:flex-row gap-3">
               <Button
                 variant="outline"
@@ -627,37 +687,21 @@ function StripeConnectCard() {
               </Button>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button
-                    variant="destructive"
-                    disabled={disconnecting}
-                    className="flex-1"
-                  >
-                    {disconnecting ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Disconnecting...
-                      </>
-                    ) : (
-                      <>
-                        <Unlink className="mr-2 h-4 w-4" />
-                        Disconnect Stripe
-                      </>
-                    )}
+                  <Button variant="destructive" disabled={disconnecting} className="flex-1">
+                    {disconnecting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Unlink className="mr-2 h-4 w-4" />}
+                    {disconnecting ? "Disconnecting…" : "Disconnect Stripe"}
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
                     <AlertDialogTitle>Disconnect Stripe Account?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Are you sure you want to disconnect your Stripe account? You will no longer be able to accept payments until you reconnect.
+                      You will no longer be able to charge students until you reconnect a Stripe account.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={handleDisconnectStripe}
-                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    >
+                    <AlertDialogAction onClick={handleDisconnectStripe} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
                       Disconnect
                     </AlertDialogAction>
                   </AlertDialogFooter>
@@ -665,46 +709,8 @@ function StripeConnectCard() {
               </AlertDialog>
             </div>
           </>
-        ) : (
-          <>
-            <div className="flex items-center justify-between rounded-lg border border-yellow-500/50 bg-yellow-50 dark:bg-yellow-950/20 p-4">
-              <div className="flex items-center gap-3">
-                <CreditCard className="h-6 w-6 text-yellow-600" />
-                <div>
-                  <h3 className="font-semibold text-yellow-600">
-                    Stripe Not Connected
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    Log in to your existing Stripe account to start accepting payments.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <Button
-              onClick={handleConnectStripe}
-              disabled={connecting}
-              className="w-full"
-            >
-              {connecting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Connecting...
-                </>
-              ) : (
-                <>
-                  <Link className="mr-2 h-4 w-4" />
-                  Connect Existing Stripe Account
-                </>
-              )}
-            </Button>
-
-            <p className="text-xs text-muted-foreground text-center">
-              You'll be redirected to log in to your <strong>existing Stripe account</strong>.
-              Don't have a Stripe account? <a href="https://dashboard.stripe.com/register" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Create one first</a>, then return here to connect it.
-            </p>
-          </>
         )}
+
       </CardContent>
     </Card>
   );

@@ -4,7 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CreditCard, DollarSign, Calendar, Shield, Check } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { CreditCard, DollarSign, Calendar, Shield, Check, CalendarClock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface MembershipPlan {
@@ -30,12 +32,16 @@ interface ActivateStudentDialogProps {
   plans: MembershipPlan[];
   selectedPlanId: string;
   onSelectPlan: (planId: string) => void;
-  onProceedToPayment: (paymentMethodId?: string) => void;
+  onProceedToPayment: (paymentMethodId?: string, billingStartDate?: string) => void;
   onActivateFreePlan: () => void;
   isProcessing: boolean;
   studentName: string;
   studentStatus?: "trial" | "student";
   paymentMethods?: PaymentMethod[];
+}
+
+function todayString() {
+  return new Date().toISOString().split("T")[0];
 }
 
 export default function ActivateStudentDialog({
@@ -52,9 +58,11 @@ export default function ActivateStudentDialog({
   paymentMethods = [],
 }: ActivateStudentDialogProps) {
   const [selectedPaymentMethodId, setSelectedPaymentMethodId] = useState<string>("new");
+  const [billingStartDate, setBillingStartDate] = useState<string>(todayString());
 
   useEffect(() => {
     if (open) {
+      setBillingStartDate(todayString());
       if (paymentMethods && paymentMethods.length > 0) {
         setSelectedPaymentMethodId(paymentMethods[0].id);
       } else {
@@ -73,16 +81,18 @@ export default function ActivateStudentDialog({
         })
       : plans;
 
-  const selectedPlan = filteredPlans.find(
-    (p) => p.id.toString() === selectedPlanId
-  );
+  const selectedPlan = filteredPlans.find((p) => p.id.toString() === selectedPlanId);
   const isFreePlan = selectedPlan?.price === "0" || selectedPlan?.price === "0.00";
+  const isFutureStart = billingStartDate > todayString();
 
   const handleAction = () => {
     if (isFreePlan) {
       onActivateFreePlan();
     } else {
-      onProceedToPayment(selectedPaymentMethodId === "new" ? undefined : selectedPaymentMethodId);
+      onProceedToPayment(
+        selectedPaymentMethodId === "new" ? undefined : selectedPaymentMethodId,
+        billingStartDate !== todayString() ? billingStartDate : undefined
+      );
     }
   };
 
@@ -92,8 +102,11 @@ export default function ActivateStudentDialog({
         <DialogHeader>
           <DialogTitle className="text-2xl">Activate Student Membership</DialogTitle>
           <DialogDescription>
-            Select a membership plan for <span className="font-semibold text-foreground">{studentName}</span>
-            {isFreePlan ? " and activate their membership." : " and proceed to secure payment to activate their membership."}
+            Select a membership plan for{" "}
+            <span className="font-semibold text-foreground">{studentName}</span>
+            {isFreePlan
+              ? " and activate their membership."
+              : " and proceed to secure payment to activate their membership."}
           </DialogDescription>
         </DialogHeader>
 
@@ -111,7 +124,9 @@ export default function ActivateStudentDialog({
                     <div className="flex items-center justify-between gap-4 w-full">
                       <span>{plan.name}</span>
                       <span className="text-muted-foreground">
-                        {plan.price === "0" || plan.price === "0.00" ? "Free" : `${plan.price}/${plan.period}`}
+                        {plan.price === "0" || plan.price === "0.00"
+                          ? "Free"
+                          : `$${plan.price}/${plan.period}`}
                       </span>
                     </div>
                   </SelectItem>
@@ -135,7 +150,6 @@ export default function ActivateStudentDialog({
                   </Badge>
                 </div>
 
-                {/* Features */}
                 {selectedPlan.features && selectedPlan.features.length > 0 && (
                   <div className="space-y-2">
                     <p className="text-sm font-medium text-foreground">Included Features:</p>
@@ -150,15 +164,16 @@ export default function ActivateStudentDialog({
                   </div>
                 )}
 
-                {/* Price Summary */}
                 <div className="pt-4 border-t border-border">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <DollarSign className="h-4 w-4" />
-                      <span className="text-sm font-medium">Amount Due Today:</span>
+                      <span className="text-sm font-medium">
+                        {isFutureStart ? "Amount Due on Start Date:" : "Amount Due Today:"}
+                      </span>
                     </div>
                     <span className="text-2xl font-bold text-foreground">
-                      {isFreePlan ? "Free" : selectedPlan.price}
+                      {isFreePlan ? "Free" : `$${selectedPlan.price}`}
                     </span>
                   </div>
                 </div>
@@ -166,7 +181,38 @@ export default function ActivateStudentDialog({
             </Card>
           )}
 
-          {/* Payment Info */}
+          {/* Billing Start Date — only for paid plans */}
+          {!isFreePlan && selectedPlan && (
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <CalendarClock className="h-4 w-4 text-muted-foreground" />
+                Billing Start Date
+              </Label>
+              <Input
+                type="date"
+                min={todayString()}
+                value={billingStartDate}
+                onChange={(e) => setBillingStartDate(e.target.value)}
+              />
+              {isFutureStart ? (
+                <p className="text-xs text-amber-600">
+                  First charge will be on{" "}
+                  {new Date(billingStartDate + "T12:00:00").toLocaleDateString("en-US", {
+                    month: "long",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
+                  . The student can train immediately.
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Billing starts today. Change this if the student needs to wait for their payday.
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Payment Method — only for paid plans */}
           {!isFreePlan && (
             <div className="space-y-3">
               <label className="text-sm font-medium text-foreground">Payment Method</label>
@@ -203,7 +249,7 @@ export default function ActivateStudentDialog({
                       )}
                     </div>
                   ))}
-                  
+
                   <div
                     className={cn(
                       "flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors",
@@ -239,7 +285,8 @@ export default function ActivateStudentDialog({
                           <p className="text-sm font-medium text-foreground">No Payment Method on File</p>
                         </div>
                         <p className="text-xs text-muted-foreground leading-relaxed">
-                          To activate this membership, you'll be redirected to our secure payment processor to add a payment method and complete the transaction.
+                          You'll be redirected to our secure payment processor to add a card and complete
+                          the transaction.
                         </p>
                       </div>
                     </div>
@@ -262,14 +309,22 @@ export default function ActivateStudentDialog({
             {isProcessing ? (
               <>
                 <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
-                {isFreePlan ? "Activating..." : selectedPaymentMethodId === "new" ? "Redirecting..." : "Processing..."}
+                {isFreePlan
+                  ? "Activating..."
+                  : selectedPaymentMethodId === "new"
+                  ? "Redirecting..."
+                  : "Processing..."}
               </>
             ) : isFreePlan ? (
               "Activate Membership"
             ) : (
               <>
                 <CreditCard className="h-4 w-4 mr-2" />
-                {paymentMethods.length === 0 || selectedPaymentMethodId === "new" ? "Proceed to Secure Payment" : "Charge Saved Card"}
+                {paymentMethods.length === 0 || selectedPaymentMethodId === "new"
+                  ? "Proceed to Secure Payment"
+                  : isFutureStart
+                  ? "Schedule Membership"
+                  : "Charge Saved Card"}
               </>
             )}
           </Button>

@@ -1,6 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.42.0";
+import Stripe from "https://esm.sh/stripe@12.3.0";
 import { corsHeaders } from "../_shared/cors.ts";
+
+const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") as string, {
+  apiVersion: "2023-10-16",
+  httpClient: Stripe.createFetchHttpClient(),
+});
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -87,11 +93,23 @@ serve(async (req) => {
       );
     }
 
-    // Remove the Stripe account ID from the organization
-    // Note: This doesn't delete the Stripe account itself, just disconnects it
+    // Revoke the OAuth grant so the gym's account is fully disconnected
+    const clientId = Deno.env.get("STRIPE_CLIENT_ID");
+    if (clientId) {
+      try {
+        await stripe.oauth.deauthorize({
+          client_id: clientId,
+          stripe_user_id: organization.stripe_account_id,
+        });
+      } catch (deauthError) {
+        // Log but don't block — still clear the DB record
+        console.error("Stripe deauthorize error:", deauthError);
+      }
+    }
+
     const { error: updateError } = await supabase
       .from("organizations")
-      .update({ stripe_account_id: null })
+      .update({ stripe_account_id: null, stripe_charges_enabled: false })
       .eq("id", profile.organization_id);
 
     if (updateError) {

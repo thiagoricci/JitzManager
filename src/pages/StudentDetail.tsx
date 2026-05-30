@@ -1,5 +1,5 @@
 import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Award, Edit, Trash2, Activity, Calendar } from "lucide-react";
+import { ArrowLeft, Award, Edit, Trash2, Activity, Calendar, Snowflake } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -31,6 +31,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useState, useEffect } from "react";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
@@ -52,6 +54,8 @@ export default function StudentDetail() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<string>("");
   const [pendingStatus, setPendingStatus] = useState<string | null>(null);
+  const [isFreezeDialogOpen, setIsFreezeDialogOpen] = useState(false);
+  const [freezeReason, setFreezeReason] = useState("");
 
   useEffect(() => {
     const setupSuccess = searchParams.get("setup_success");
@@ -149,7 +153,7 @@ export default function StudentDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("students")
-        .select("*, membership_plans(name)")
+        .select("*, membership_plans(name, price, period)")
         .eq("id", id)
         .eq("organization_id", organization!.id)
         .single();
@@ -322,7 +326,7 @@ export default function StudentDetail() {
   });
 
   const updateMembershipMutation = useMutation({
-    mutationFn: async ({ planId, additionalUpdates }: { planId: string; additionalUpdates?: any }) => {
+    mutationFn: async ({ planId, additionalUpdates }: { planId: string; additionalUpdates?: Record<string, unknown> }) => {
       const { error } = await supabase
         .from("students")
         .update({ membership_plan_id: parseInt(planId), ...additionalUpdates })
@@ -416,7 +420,7 @@ export default function StudentDetail() {
   });
 
   const chargeStudentMutation = useMutation({
-    mutationFn: async ({ planId, paymentMethodId }: { planId: string; paymentMethodId: string }) => {
+    mutationFn: async ({ planId, paymentMethodId, billingStartDate }: { planId: string; paymentMethodId: string; billingStartDate?: string }) => {
       if (!id) throw new Error("Student ID is missing");
 
       const {
@@ -435,6 +439,7 @@ export default function StudentDetail() {
             studentId: id,
             planId,
             paymentMethodId,
+            billingStartDate,
           }),
         }
       );
@@ -470,7 +475,7 @@ export default function StudentDetail() {
     },
   });
 
-  const handleUpdateMembership = (paymentMethodId?: string) => {
+  const handleUpdateMembership = (paymentMethodId?: string, billingStartDate?: string) => {
     if (!selectedPlan) {
       toast.error("Please select a membership plan.");
       return;
@@ -485,7 +490,7 @@ export default function StudentDetail() {
     if (plan.price === "0" || plan.price === "0.00") {
       activateFreebieMutation.mutate(selectedPlan);
     } else if (paymentMethodId) {
-      chargeStudentMutation.mutate({ planId: selectedPlan, paymentMethodId });
+      chargeStudentMutation.mutate({ planId: selectedPlan, paymentMethodId, billingStartDate });
     } else {
       createCheckoutSessionMutation.mutate({ planId: selectedPlan });
     }
@@ -555,9 +560,37 @@ export default function StudentDetail() {
     },
   });
 
+  const freezeStudentMutation = useMutation({
+    mutationFn: async ({ reason }: { reason: string }) => {
+      try {
+        await cancelSubscriptionMutation.mutateAsync(`Account frozen: ${reason}`);
+      } catch {
+        // Ignore cancellation errors — subscription may not exist
+      }
+      const { error } = await supabase
+        .from("students")
+        .update({
+          membership_status: "frozen",
+          freeze_reason: reason,
+          frozen_at: new Date().toISOString(),
+        })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["student", id] });
+      setIsFreezeDialogOpen(false);
+      setFreezeReason("");
+      toast.success("Account frozen successfully");
+    },
+    onError: (error) => {
+      toast.error(`Error freezing account: ${error.message}`);
+    },
+  });
+
   const updateStatusMutation = useMutation({
     mutationFn: async (newStatus: string) => {
-      let updates: any = {};
+      let updates: Record<string, unknown> = {};
       
       if (newStatus === "trial") {
         updates = { status: "trial", membership_status: null, membership_plan_id: null };
@@ -719,13 +752,9 @@ export default function StudentDetail() {
                   <Select
                     value={displayValue}
                     onValueChange={(value) => {
-                      if (value === "active") {
-                        // Opening membership dialog to select a plan and process payment
-                        updateStatusMutation.mutate(value);
-                      } else if (value === "trial") {
-                        updateStatusMutation.mutate(value);
+                      if (value === "frozen") {
+                        setIsFreezeDialogOpen(true);
                       } else {
-                        // For frozen/inactive, update directly
                         updateStatusMutation.mutate(value);
                       }
                     }}
@@ -805,19 +834,58 @@ export default function StudentDetail() {
                 <Edit className="h-4 w-4" />
               </Button>
             </CardHeader>
-            <CardContent className="space-y-4 pt-4">
+            <CardContent className="space-y-0 pt-4">
               <div className="flex justify-between py-2 border-b border-border">
                 <span className="text-muted-foreground">Current Plan</span>
                 <span className="font-medium text-foreground">
                   {student.membership_plans?.name || "No Plan"}
                 </span>
               </div>
-              <div className="flex justify-between py-2">
+              {student.membership_plans?.price && (
+                <div className="flex justify-between py-2 border-b border-border">
+                  <span className="text-muted-foreground">Amount</span>
+                  <span className="font-medium text-foreground">
+                    ${student.membership_plans.price}/{student.membership_plans.period}
+                  </span>
+                </div>
+              )}
+              {student.billing_start_date && (
+                <div className="flex justify-between py-2 border-b border-border">
+                  <span className="text-muted-foreground">Billing Start Date</span>
+                  <span className="font-medium text-foreground">
+                    {formatDate(student.billing_start_date, organization?.timezone)}
+                  </span>
+                </div>
+              )}
+              <div className="flex justify-between py-2 border-b border-border">
                 <span className="text-muted-foreground">Join Date</span>
                 <span className="font-medium text-foreground">
                   {formatDate(student.join_date, organization?.timezone)}
                 </span>
               </div>
+              {student.membership_status === "frozen" && (
+                <>
+                  {student.frozen_at && (
+                    <div className="flex justify-between py-2 border-b border-border">
+                      <span className="text-muted-foreground flex items-center gap-1">
+                        <Snowflake className="h-3.5 w-3.5 text-blue-400" />
+                        Frozen Since
+                      </span>
+                      <span className="font-medium text-foreground">
+                        {formatDate(student.frozen_at, organization?.timezone)}
+                      </span>
+                    </div>
+                  )}
+                  {student.freeze_reason && (
+                    <div className="flex justify-between py-2">
+                      <span className="text-muted-foreground">Freeze Reason</span>
+                      <span className="font-medium text-foreground capitalize">
+                        {student.freeze_reason}
+                      </span>
+                    </div>
+                  )}
+                </>
+              )}
             </CardContent>
           </Card>
           <Card>
@@ -829,7 +897,7 @@ export default function StudentDetail() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {attendanceHistory?.map((record: any) => (
+                {attendanceHistory?.map((record: { id: number; date: string; schedules?: { name: string; start_time: string } | null }) => (
                   <div
                     key={record.id}
                     className="flex items-center justify-between rounded-lg border border-border p-3"
@@ -869,6 +937,41 @@ export default function StudentDetail() {
         </div>
       </div>
 
+      {/* Freeze Dialog */}
+      <Dialog open={isFreezeDialogOpen} onOpenChange={(open) => { setIsFreezeDialogOpen(open); if (!open) setFreezeReason(""); }}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Snowflake className="h-5 w-5 text-blue-400" />
+              Freeze Account
+            </DialogTitle>
+            <DialogDescription>
+              Billing will be paused until you unfreeze the account. {student?.name} can still be manually checked in.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <Label>Reason for freeze</Label>
+            <Textarea
+              placeholder="e.g. Injured knee, traveling for 3 weeks, financial hardship..."
+              value={freezeReason}
+              onChange={(e) => setFreezeReason(e.target.value)}
+              rows={3}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setIsFreezeDialogOpen(false); setFreezeReason(""); }}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => freezeStudentMutation.mutate({ reason: freezeReason })}
+              disabled={!freezeReason.trim() || freezeStudentMutation.isPending}
+            >
+              {freezeStudentMutation.isPending ? "Freezing..." : "Freeze Account"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Activation Dialog */}
       <ActivateStudentDialog
         open={isDialogOpen}
@@ -879,7 +982,7 @@ export default function StudentDetail() {
         plans={membershipPlans || []}
         selectedPlanId={selectedPlan}
         onSelectPlan={setSelectedPlan}
-        onProceedToPayment={handleUpdateMembership}
+        onProceedToPayment={(pmId, startDate) => handleUpdateMembership(pmId, startDate)}
         onActivateFreePlan={() => handleUpdateMembership()}
         isProcessing={createCheckoutSessionMutation.isPending || activateFreebieMutation.isPending || chargeStudentMutation.isPending}
         studentName={student.name || "Unknown Student"}

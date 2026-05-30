@@ -24,8 +24,16 @@ import { useNavigate } from "react-router-dom";
 
 export default function Memberships() {
   const queryClient = useQueryClient();
-  const { profile, organization } = useAuth();
+  const { profile, organization, session } = useAuth();
   const navigate = useNavigate();
+
+  const syncToStripe = (planId: number, action: "create" | "update" | "delete") => {
+    if (!session?.access_token) return;
+    supabase.functions.invoke("sync-membership-plan", {
+      body: { planId, action },
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    }).catch((err) => console.error("Stripe sync error:", err));
+  };
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
   const [planToDelete, setPlanToDelete] = useState<any>(null);
@@ -60,19 +68,20 @@ export default function Memberships() {
   const createMutation = useMutation({
     mutationFn: async (values: MembershipFormValues) => {
       if (!profile?.organization_id) throw new Error("Organization not found");
-      
       const formattedData = {
         ...values,
         features: values.features?.map((f) => f.value) || [],
         organization_id: profile.organization_id,
       };
-      const { error } = await supabase.from("membership_plans").insert(formattedData);
+      const { data, error } = await supabase.from("membership_plans").insert(formattedData).select().single();
       if (error) throw error;
+      return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["membershipPlans"] });
       toast.success("Membership plan created successfully");
       setIsDialogOpen(false);
+      syncToStripe(data.id, "create");
     },
     onError: (error) => {
       toast.error(`Error creating plan: ${error.message}`);
@@ -95,6 +104,7 @@ export default function Memberships() {
       queryClient.invalidateQueries({ queryKey: ["membershipPlans"] });
       toast.success("Membership plan updated successfully");
       setIsDialogOpen(false);
+      syncToStripe(selectedPlan.id, "update");
       setSelectedPlan(null);
     },
     onError: (error) => {
@@ -135,10 +145,16 @@ export default function Memberships() {
     setPlanToDelete(plan);
   };
 
-  const confirmDelete = () => {
-    if (planToDelete) {
-      deleteMutation.mutate(planToDelete.id);
+  const confirmDelete = async () => {
+    if (!planToDelete) return;
+    // Archive in Stripe first while plan still exists in DB
+    if (planToDelete.stripe_product_id && session?.access_token) {
+      await supabase.functions.invoke("sync-membership-plan", {
+        body: { planId: planToDelete.id, action: "delete" },
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      }).catch((err) => console.error("Stripe archive error:", err));
     }
+    deleteMutation.mutate(planToDelete.id);
   };
 
   const handleSubmit = (values: MembershipFormValues) => {

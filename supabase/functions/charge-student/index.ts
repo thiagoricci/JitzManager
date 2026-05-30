@@ -30,7 +30,7 @@ serve(async (req: Request) => {
       );
     }
 
-    const { studentId, planId, paymentMethodId } = await req.json();
+    const { studentId, planId, paymentMethodId, billingStartDate } = await req.json();
 
     if (!studentId || !planId || !paymentMethodId) {
       return new Response(
@@ -90,7 +90,7 @@ serve(async (req: Request) => {
     // Fetch plan
     const { data: plan, error: planError } = await supabase
       .from("membership_plans")
-      .select("name, price, period")
+      .select("name, price, period, stripe_product_id, stripe_price_id")
       .eq("id", planId)
       .single();
 
@@ -138,51 +138,42 @@ serve(async (req: Request) => {
       stripeOptions
     );
 
-    // Create a subscription instead of a one-time payment
+    // Resolve the Stripe price ID — use the pre-created one if available
     console.log(`Creating subscription for student ${studentId} for plan ${planId}`);
-    
-    // First, create or find a product for this plan
-    const productName = `Membership: ${plan.name}`;
-    let product: Stripe.Product;
-    
-    // Search for existing product
-    const existingProducts = await stripe.products.search({
-      query: `name:'${productName}'`,
-    }, stripeOptions);
-    
-    if (existingProducts.data.length > 0) {
-      product = existingProducts.data[0];
+
+    let priceId: string;
+
+    if (plan.stripe_price_id) {
+      priceId = plan.stripe_price_id;
     } else {
-      // Create a new product
-      product = await stripe.products.create({
-        name: productName,
-        metadata: {
-          planId: planId.toString(),
-        },
+      // Fallback: create product + price on the fly for plans without Stripe IDs
+      const productName = `Membership: ${plan.name}`;
+      const existingProducts = await stripe.products.search({
+        query: `name:'${productName}'`,
       }, stripeOptions);
+
+      const product = existingProducts.data.length > 0
+        ? existingProducts.data[0]
+        : await stripe.products.create({
+            name: productName,
+            metadata: { planId: planId.toString() },
+          }, stripeOptions);
+
+      const price = await stripe.prices.create({
+        product: product.id,
+        unit_amount: Math.round(parseFloat(plan.price) * 100),
+        currency: "usd",
+        recurring: { interval: "month" },
+        metadata: { planId: planId.toString() },
+      }, stripeOptions);
+
+      priceId = price.id;
     }
-    
-    // Create a price for the subscription
-    const price = await stripe.prices.create({
-      product: product.id,
-      unit_amount: Math.round(parseFloat(plan.price) * 100),
-      currency: "usd",
-      recurring: {
-        interval: "month",
-      },
-      metadata: {
-        planId: planId.toString(),
-      },
-    }, stripeOptions);
-    
+
     // Create the subscription with the price
-    const subscription = await stripe.subscriptions.create({
+    const subscriptionParams: Stripe.SubscriptionCreateParams = {
       customer: student.stripe_customer_id,
-      items: [
-        {
-          price: price.id,
-        },
-      ],
+      items: [{ price: priceId }],
       default_payment_method: paymentMethodId,
       metadata: {
         studentId: studentId.toString(),
@@ -190,7 +181,18 @@ serve(async (req: Request) => {
         organizationId: student.organization_id,
       },
       expand: ["latest_invoice.payment_intent"],
-    }, stripeOptions);
+    };
+
+    // Delay first billing if a future start date was requested
+    if (billingStartDate) {
+      const startTs = Math.floor(new Date(billingStartDate).getTime() / 1000);
+      const tomorrowTs = Math.floor(Date.now() / 1000) + 86400;
+      if (startTs > tomorrowTs) {
+        subscriptionParams.trial_end = startTs;
+      }
+    }
+
+    const subscription = await stripe.subscriptions.create(subscriptionParams, stripeOptions);
 
     // Check if the subscription was created successfully
     const invoice = subscription.latest_invoice as Stripe.Invoice;
@@ -203,14 +205,19 @@ serve(async (req: Request) => {
         (plan.price === "0" || plan.price === "0.00") &&
         ["Daily", "Weekly"].includes(plan.period);
       
-      // Update student status
+      // Update student status and save subscription/billing info
+      const studentUpdates: Record<string, unknown> = {
+        membership_status: "active",
+        status: isTrialPlan ? "trial" : "student",
+        membership_plan_id: parseInt(planId),
+        subscription_id: subscription.id,
+      };
+      if (billingStartDate) {
+        studentUpdates.billing_start_date = billingStartDate;
+      }
       const { error: updateError } = await supabase
         .from("students")
-        .update({
-          membership_status: "active",
-          status: isTrialPlan ? "trial" : "student",
-          membership_plan_id: parseInt(planId),
-        })
+        .update(studentUpdates)
         .eq("id", studentId);
 
       if (updateError) {
@@ -265,6 +272,7 @@ serve(async (req: Request) => {
             date: new Date().toISOString(),
             status: "failed",
             failure_reason: failureReason,
+            stripe_invoice_id: invoice?.id ?? null,
           });
 
         if (paymentError) {

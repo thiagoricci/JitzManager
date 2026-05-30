@@ -1,9 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.42.0";
+import Stripe from "https://esm.sh/stripe@12.3.0";
 import { corsHeaders } from "../_shared/cors.ts";
 
-// Standard OAuth flow — no account creation on our side.
-// Gyms can connect an existing Stripe account or create a new one during OAuth.
+const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") as string, {
+  apiVersion: "2023-10-16",
+  httpClient: Stripe.createFetchHttpClient(),
+});
 
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -33,9 +36,9 @@ serve(async (req: Request) => {
       });
     }
 
-    const { returnUrl } = await req.json() as { returnUrl: string };
-    if (!returnUrl) {
-      return new Response(JSON.stringify({ error: "returnUrl is required" }), {
+    const { code, state } = await req.json() as { code: string; state: string };
+    if (!code) {
+      return new Response(JSON.stringify({ error: "code is required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -54,32 +57,50 @@ serve(async (req: Request) => {
       });
     }
 
-    const clientId = Deno.env.get("STRIPE_CLIENT_ID");
-    if (!clientId) {
-      return new Response(JSON.stringify({ error: "STRIPE_CLIENT_ID not configured" }), {
+    // Verify the state param matches this user's org (CSRF protection)
+    if (state && state !== profile.organization_id) {
+      return new Response(JSON.stringify({ error: "Invalid state parameter" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Exchange the authorization code for the connected account ID
+    const oauthResponse = await stripe.oauth.token({
+      grant_type: "authorization_code",
+      code,
+    });
+
+    const stripeAccountId = oauthResponse.stripe_user_id;
+    if (!stripeAccountId) {
+      return new Response(JSON.stringify({ error: "Failed to get Stripe account ID from OAuth response" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const params = new URLSearchParams({
-      response_type: "code",
-      client_id: clientId,
-      scope: "read_write",
-      redirect_uri: returnUrl,
-      state: profile.organization_id,
-    });
+    // Standard connected accounts are immediately ready to accept charges
+    const { error: updateError } = await supabase
+      .from("organizations")
+      .update({ stripe_account_id: stripeAccountId, stripe_charges_enabled: true })
+      .eq("id", profile.organization_id);
 
-    const url = `https://connect.stripe.com/oauth/authorize?${params.toString()}`;
+    if (updateError) {
+      console.error("Error saving Stripe account:", updateError);
+      return new Response(JSON.stringify({ error: "Failed to save Stripe account" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
-    return new Response(JSON.stringify({ url }), {
+    return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
   } catch (error) {
     const message = error instanceof Error ? error.message : JSON.stringify(error);
-    console.error("Error creating Stripe Connect link:", message);
+    console.error("Error exchanging Stripe code:", message);
     return new Response(
       JSON.stringify({ error: message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }

@@ -34,11 +34,25 @@ export function AppSidebar() {
     <Sidebar className={open ? "w-64" : "w-16"} collapsible="icon">
       <SidebarHeader className="p-4">
         {open && (
-          <div className="px-2">
-            <h1 className="text-xl font-bold truncate" title={organization?.name || "Academy Manager"}>
+          <div className="px-2 flex items-center gap-3">
+            {organization?.logo_url && (
+              <img
+                src={organization.logo_url}
+                alt={organization?.name || "Logo"}
+                className="h-12 w-12 shrink-0 object-contain rounded"
+              />
+            )}
+            <h1 className="text-base font-bold leading-tight line-clamp-2" title={organization?.name || "Academy Manager"}>
               {organization?.name || "Academy Manager"}
             </h1>
           </div>
+        )}
+        {!open && organization?.logo_url && (
+          <img
+            src={organization.logo_url}
+            alt=""
+            className="h-12 w-12 mx-auto object-contain"
+          />
         )}
       </SidebarHeader>
       <SidebarContent>
