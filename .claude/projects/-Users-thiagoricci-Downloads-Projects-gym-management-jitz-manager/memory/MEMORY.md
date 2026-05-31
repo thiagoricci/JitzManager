@@ -1,0 +1,1 @@
+- [Edge functions need supabase-js >= 2.86](edge-functions-need-supabase-js-2-86.md) — project uses ES256 asymmetric JWT keys; old 2.42.0 getUser 401s
