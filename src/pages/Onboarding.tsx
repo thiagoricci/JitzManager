@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,7 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 export default function Onboarding() {
   const navigate = useNavigate();
-  const { user, profile, refreshProfile } = useAuth();
+  const { user, profile, session, loading: authLoading, refreshProfile } = useAuth();
   const [orgName, setOrgName] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -85,6 +85,25 @@ export default function Onboarding() {
       setLoading(false);
     }
   };
+
+  // Wait for auth to resolve, then only allow signed-in users onto onboarding.
+  // Unauthenticated visitors are sent to login; users who already have an
+  // organization don't belong here, so send them to the dashboard.
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-muted/50 px-4">
+        Loading...
+      </div>
+    );
+  }
+
+  if (!session) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (profile?.organization_id) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/50 px-4">
