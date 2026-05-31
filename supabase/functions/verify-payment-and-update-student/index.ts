@@ -210,6 +210,23 @@ serve(async (req) => {
     const paymentAmount = isScheduled ? planPrice : chargedAmount;
     const paymentDate = new Date(session.created * 1000).toISOString();
 
+    // Resolve the PaymentIntent so the payment is refundable. Scheduled charges
+    // have no PaymentIntent yet — invoice.paid links it later via the webhook.
+    let paymentIntentId: string | null = null;
+    if (!isScheduled && session.subscription) {
+      try {
+        const sub = await stripe.subscriptions.retrieve(
+          session.subscription as string,
+          { expand: ["latest_invoice"] },
+          { stripeAccount: stripeAccountId },
+        );
+        const latestInvoice = sub.latest_invoice as Stripe.Invoice | null;
+        paymentIntentId = (latestInvoice?.payment_intent as string) || null;
+      } catch (e) {
+        console.error("Could not resolve PaymentIntent for checkout session:", e);
+      }
+    }
+
     if (student.organization_id && (!isScheduled || planPrice > 0)) {
       console.log(`Inserting payment for student ${studentIdFromSession} in org ${student.organization_id} — status: ${paymentStatus}`);
       const { data: paymentData, error: paymentError } = await supabase
@@ -220,6 +237,7 @@ serve(async (req) => {
           amount: paymentAmount,
           date: paymentDate,
           status: paymentStatus,
+          stripe_payment_intent_id: paymentIntentId,
         }])
         .select();
 

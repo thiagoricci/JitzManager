@@ -119,12 +119,30 @@ export async function provisionSelfSignup(
   const charged = amountTotal ? amountTotal / 100 : 0;
   const isScheduled = charged === 0 && planPrice > 0;
 
+  // Resolve the PaymentIntent so the payment is refundable. Scheduled charges
+  // have no PaymentIntent yet — invoice.paid links it later via the webhook.
+  let paymentIntentId: string | null = null;
+  if (!isScheduled && subscriptionId) {
+    try {
+      const sub = await stripe.subscriptions.retrieve(
+        subscriptionId,
+        { expand: ["latest_invoice"] },
+        connectedAccountId ? { stripeAccount: connectedAccountId } : undefined,
+      );
+      const latestInvoice = sub.latest_invoice as Stripe.Invoice | null;
+      paymentIntentId = (latestInvoice?.payment_intent as string) || null;
+    } catch (e) {
+      console.error("Could not resolve PaymentIntent for self-signup:", e);
+    }
+  }
+
   const { error: payErr } = await supabase.from("payments").insert({
     student_id: studentId,
     organization_id: organizationId,
     amount: isScheduled ? planPrice : charged,
     date: new Date().toISOString(),
     status: isScheduled ? "scheduled" : "paid",
+    stripe_payment_intent_id: paymentIntentId,
   });
   if (payErr) console.error("Error recording self-signup payment:", JSON.stringify(payErr));
 
