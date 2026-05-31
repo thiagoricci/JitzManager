@@ -18,6 +18,8 @@ import {
   UserCheck,
   UserPlus,
   Lock,
+  Menu,
+  X,
 } from "lucide-react";
 import { useState, useEffect, useRef, type FC, type ReactNode, type CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
@@ -102,6 +104,7 @@ const beltDots = [BELT.white, BELT.blue, BELT.purple, BELT.brown, BELT.black];
 export default function Landing() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useBrandLightMode();
 
@@ -366,12 +369,59 @@ export default function Landing() {
                 "Get started"
               )}
             </Primary>
+            <button
+              onClick={() => setMenuOpen((o) => !o)}
+              aria-label={menuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={menuOpen}
+              className="md:hidden inline-flex h-10 w-10 items-center justify-center rounded-lg"
+              style={{ color: TEXT, border: `1px solid ${LINE}`, background: PAGE_ALT }}
+            >
+              {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
           </div>
         </div>
+
+        {/* mobile menu */}
+        {menuOpen && (
+          <div
+            className="md:hidden px-6 pb-5 pt-2"
+            style={{ borderTop: `1px solid ${LINE}`, background: "hsl(220 17% 97% / .96)" }}
+          >
+            <nav className="flex flex-col">
+              {[
+                { label: "Features", action: () => scrollTo("features") },
+                { label: "Pricing", action: () => scrollTo("pricing") },
+                { label: "Docs", action: () => navigate("/documentation") },
+              ].map((l) => (
+                <button
+                  key={l.label}
+                  onClick={() => {
+                    setMenuOpen(false);
+                    l.action();
+                  }}
+                  className="py-3 text-left text-base font-medium"
+                  style={{ color: TEXT, borderBottom: `1px solid ${LINE}` }}
+                >
+                  {l.label}
+                </button>
+              ))}
+              <button
+                onClick={() => {
+                  setMenuOpen(false);
+                  navigate("/login");
+                }}
+                className="py-3 text-left text-base font-semibold"
+                style={{ color: NAVY }}
+              >
+                Log in
+              </button>
+            </nav>
+          </div>
+        )}
       </header>
 
       {/* ───────────────────────── HERO ───────────────────────── */}
-      <section className="relative">
+      <section className="relative flex items-center min-h-[calc(100svh-69px)]">
         {/* atmosphere */}
         <div
           className="absolute inset-0 pointer-events-none"
@@ -391,7 +441,7 @@ export default function Landing() {
           }}
         />
 
-        <div className="relative max-w-[1240px] mx-auto px-6 lg:pl-10 pt-20 pb-24 md:pt-28 md:pb-32">
+        <div className="relative w-full max-w-[1240px] mx-auto px-6 lg:pl-10 pt-10 pb-24 md:pt-12 md:pb-28">
           <div className="grid lg:grid-cols-[1.15fr_.85fr] gap-16 items-center">
             {/* left: type */}
             <div>
@@ -611,24 +661,25 @@ export default function Landing() {
         <div className="flex w-max" style={{ animation: "jm-marquee 32s linear infinite" }}>
           {[0, 1].map((dup) => (
             <div key={dup} className="flex items-center shrink-0">
-              {marqueeWords.map((w, i) => (
-                <div key={`${dup}-${w}`} className="flex items-center">
-                  <span
-                    className="block h-3 w-3 rounded-full mx-7"
-                    style={{ background: beltDots[i % beltDots.length], boxShadow: dotRing(beltDots[i % beltDots.length]) }}
-                  />
-                  <span
-                    className="uppercase text-[clamp(1.5rem,3vw,2.4rem)] whitespace-nowrap"
-                    style={{
-                      ...anton,
-                      color: i % 2 === 0 ? TEXT : "transparent",
-                      WebkitTextStroke: i % 2 === 0 ? "0" : `1px ${LINE_HI}`,
-                    }}
-                  >
-                    {w}
-                  </span>
-                </div>
-              ))}
+              {marqueeWords.map((w, i) => {
+                const belt = beltDots[i % beltDots.length];
+                // white belt is too light to read as solid text → use black instead
+                const wordColor = belt === BELT.white ? BELT.black : belt;
+                return (
+                  <div key={`${dup}-${w}`} className="flex items-center">
+                    <span
+                      className="block h-3 w-3 rounded-full mx-7"
+                      style={{ background: belt, boxShadow: dotRing(belt) }}
+                    />
+                    <span
+                      className="uppercase text-[clamp(1.5rem,3vw,2.4rem)] whitespace-nowrap"
+                      style={{ ...anton, color: wordColor }}
+                    >
+                      {w}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           ))}
         </div>
@@ -830,14 +881,13 @@ export default function Landing() {
 
                 <ul className="space-y-3.5 mb-9">
                   {pricingFeatures.map((f, i) => {
-                    const c = beltDots[i % beltDots.length];
                     return (
                       <li key={f} className="flex items-center gap-3.5">
                         <div
                           className="h-6 w-6 rounded-full flex items-center justify-center shrink-0"
-                          style={{ background: c, boxShadow: dotRing(c) }}
+                          style={{ background: NAVY }}
                         >
-                          <Check className="h-3.5 w-3.5" style={{ color: c === BELT.white ? "hsl(0 0% 12%)" : "hsl(0 0% 100%)" }} strokeWidth={3} />
+                          <Check className="h-3.5 w-3.5" style={{ color: "hsl(0 0% 100%)" }} strokeWidth={3} />
                         </div>
                         <span style={{ ...body, fontWeight: 500, color: TEXT }}>{f}</span>
                       </li>
@@ -888,14 +938,26 @@ export default function Landing() {
             </div>
           </Reveal>
           <Reveal delay={80}>
+            <span
+              className="inline-flex items-center gap-2 uppercase tracking-[0.2em] text-[10px] md:text-xs font-bold px-4 py-2 rounded-full border"
+              style={{
+                color: "hsl(348 83% 60%)",
+                borderColor: "hsl(348 83% 60% / .35)",
+                background: "hsl(348 83% 60% / .08)",
+                fontFamily: "'Hanken Grotesk', sans-serif",
+              }}
+            >
+              Designed for Academy Owners
+            </span>
+          </Reveal>
+          <Reveal delay={80}>
             <h2 className="uppercase leading-[0.88] text-[clamp(2.75rem,8vw,5.5rem)] text-white" style={anton}>
-              Stop managing<br />on paper
+              Made by a<br />Black Belt
             </h2>
           </Reveal>
           <Reveal delay={160}>
             <p className="mt-7 text-lg md:text-xl max-w-xl mx-auto leading-relaxed" style={{ color: "hsl(220 30% 82%)" }}>
-              Join hundreds of BJJ academies using JitzManager to handle the admin —
-              so they can get back to what they do best: teaching.
+              Join academies using JitzManager to manage memberships, attendance, and payments — so they can focus on teaching, not paperwork.
             </p>
           </Reveal>
           <Reveal delay={240}>

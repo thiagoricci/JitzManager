@@ -166,9 +166,15 @@ serve(async (req: Request) => {
         metadata: { plan_id: String(planId) },
       }, stripeOptions);
 
+      // The existing sign-up Payment Link points at the now-archived price.
+      // Deactivate it and clear it so the admin regenerates one with the new price.
+      if (plan.signup_link_id) {
+        await stripe.paymentLinks.update(plan.signup_link_id, { active: false }, stripeOptions).catch(console.error);
+      }
+
       await supabase
         .from("membership_plans")
-        .update({ stripe_price_id: newPrice.id })
+        .update({ stripe_price_id: newPrice.id, signup_link_url: null, signup_link_id: null })
         .eq("id", planId);
 
       return new Response(JSON.stringify({ success: true, priceId: newPrice.id }), {
@@ -178,6 +184,9 @@ serve(async (req: Request) => {
     }
 
     if (action === "delete") {
+      if (plan.signup_link_id) {
+        await stripe.paymentLinks.update(plan.signup_link_id, { active: false }, stripeOptions).catch(console.error);
+      }
       if (plan.stripe_product_id) {
         // Archive all active prices first, then the product
         if (plan.stripe_price_id) {

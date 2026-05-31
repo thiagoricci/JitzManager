@@ -1,5 +1,5 @@
 import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Award, Edit, Trash2, Activity, Calendar, Snowflake } from "lucide-react";
+import { ArrowLeft, Award, Edit, Trash2, Activity, Calendar, Snowflake, Link2, FileSignature, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -44,6 +44,8 @@ import { loadStripe } from "@stripe/stripe-js";
 import ActivateStudentDialog from "@/components/ActivateStudentDialog";
 import PaymentMethods from "@/components/PaymentMethods";
 import PaymentHistory from "@/components/PaymentHistory";
+import WaiverBadge from "@/components/WaiverBadge";
+import WaiverSignForm from "@/components/WaiverSignForm";
 
 export default function StudentDetail() {
   const { id } = useParams();
@@ -56,6 +58,8 @@ export default function StudentDetail() {
   const [pendingStatus, setPendingStatus] = useState<string | null>(null);
   const [isFreezeDialogOpen, setIsFreezeDialogOpen] = useState(false);
   const [freezeReason, setFreezeReason] = useState("");
+  const [isWaiverSignOpen, setIsWaiverSignOpen] = useState(false);
+  const [isWaiverViewOpen, setIsWaiverViewOpen] = useState(false);
 
   useEffect(() => {
     const setupSuccess = searchParams.get("setup_success");
@@ -145,6 +149,18 @@ export default function StudentDetail() {
 
   const handleAddPaymentMethod = () => {
     createSetupSessionMutation.mutate();
+  };
+
+  const handleCopyWaiverLink = () => {
+    if (!student?.waiver_token) {
+      toast.error("This student doesn't have a waiver link yet.");
+      return;
+    }
+    const link = `${window.location.origin}/waiver/${student.waiver_token}`;
+    navigator.clipboard?.writeText(link).then(
+      () => toast.success("Waiver link copied — paste it into a text/SMS to the student"),
+      () => toast.error(`Could not copy automatically. Link: ${link}`),
+    );
   };
 
   const { data: student, isLoading: isLoadingStudent } = useQuery({
@@ -712,17 +728,37 @@ export default function StudentDetail() {
           <ArrowLeft className="mr-2 h-4 w-4" />
           Go Back
         </Button>
+        {student.waiver_status === "signed" ? (
+          <Button variant="outline" size="sm" onClick={() => setIsWaiverViewOpen(true)}>
+            <Eye className="mr-2 h-4 w-4" />
+            View Signed Waiver
+          </Button>
+        ) : (
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => setIsWaiverSignOpen(true)}>
+              <FileSignature className="mr-2 h-4 w-4" />
+              Sign on Screen
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleCopyWaiverLink}>
+              <Link2 className="mr-2 h-4 w-4" />
+              Copy Link
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Student Header */}
       <Card>
         <CardContent className="pt-6">
           <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-primary text-2xl font-bold text-primary-foreground">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted text-2xl font-bold text-muted-foreground">
               {student.name?.charAt(0) || "?"}
             </div>
             <div className="flex-1 flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-foreground">{student.name || "Unknown Student"}</h2>
+              <div className="flex flex-col gap-1.5">
+                <h2 className="text-2xl font-bold text-foreground">{student.name || "Unknown Student"}</h2>
+                <WaiverBadge status={student.waiver_status} className="w-fit" />
+              </div>
               {(() => {
                 // Determine the current effective status
                 const isActiveStudent = student.status === "student" && student.membership_status === "active";
@@ -990,6 +1026,84 @@ export default function StudentDetail() {
         studentStatus={student.status as "trial" | "student"}
         paymentMethods={paymentMethods || []}
       />
+
+      {/* Sign Waiver on screen — same signing page the emailed link opens */}
+      <Dialog open={isWaiverSignOpen} onOpenChange={setIsWaiverSignOpen}>
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+          <DialogTitle className="sr-only">Sign Waiver</DialogTitle>
+          {student.waiver_token && (
+            <WaiverSignForm
+              token={student.waiver_token}
+              onSigned={() => queryClient.invalidateQueries({ queryKey: ["student", id] })}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* View the saved, signed waiver record */}
+      <Dialog open={isWaiverViewOpen} onOpenChange={setIsWaiverViewOpen}>
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Signed Waiver</DialogTitle>
+            <DialogDescription>
+              Signed by {student.waiver_signed_name || "—"}
+              {student.waiver_signed_at &&
+                ` on ${formatDate(student.waiver_signed_at, organization?.timezone)}`}
+            </DialogDescription>
+          </DialogHeader>
+          {!student.waiver_signed_text && organization?.waiver_text && (
+            <p className="text-xs text-muted-foreground">
+              This signature predates waiver archiving — showing the academy's current waiver text.
+            </p>
+          )}
+          <div className="max-h-60 overflow-y-auto rounded-lg border border-border bg-muted/40 p-4 text-sm leading-relaxed whitespace-pre-wrap text-foreground">
+            {student.waiver_signed_text ||
+              organization?.waiver_text ||
+              "(Waiver text was not recorded for this signature.)"}
+          </div>
+          {(() => {
+            const d = student.waiver_signed_details as {
+              dateOfBirth?: string | null;
+              phone?: string | null;
+              email?: string | null;
+              isMinor?: boolean;
+              guardianName?: string | null;
+            } | null;
+            return (
+              <div className="rounded-lg border border-border p-3 text-sm space-y-1.5">
+                <div className="flex justify-between gap-4">
+                  <span className="text-muted-foreground">Signature</span>
+                  <span className="font-medium text-foreground">{student.waiver_signed_name || "—"}</span>
+                </div>
+                {d?.dateOfBirth && (
+                  <div className="flex justify-between gap-4">
+                    <span className="text-muted-foreground">Date of birth</span>
+                    <span className="font-medium text-foreground">{d.dateOfBirth}</span>
+                  </div>
+                )}
+                {d?.email && (
+                  <div className="flex justify-between gap-4">
+                    <span className="text-muted-foreground">Email</span>
+                    <span className="font-medium text-foreground">{d.email}</span>
+                  </div>
+                )}
+                {d?.phone && (
+                  <div className="flex justify-between gap-4">
+                    <span className="text-muted-foreground">Phone</span>
+                    <span className="font-medium text-foreground">{d.phone}</span>
+                  </div>
+                )}
+                {d?.isMinor && (
+                  <div className="flex justify-between gap-4">
+                    <span className="text-muted-foreground">Parent / guardian</span>
+                    <span className="font-medium text-foreground">{d.guardianName || "—"}</span>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

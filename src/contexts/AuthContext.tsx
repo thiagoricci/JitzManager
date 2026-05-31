@@ -21,6 +21,7 @@ type Organization = {
   timezone: string;
   stripe_account_id: string | null;
   stripe_charges_enabled: boolean;
+  waiver_text: string | null;
 };
 
 type AuthContextType = {
@@ -95,7 +96,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const { data: orgData, error: orgError } = await supabase
             .from("organizations")
             .select(
-              "id, name, slug, logo_url, address, timezone, stripe_account_id, stripe_charges_enabled"
+              "id, name, slug, logo_url, address, timezone, stripe_account_id, stripe_charges_enabled, waiver_text"
             )
             .eq("id", profileData.organization_id)
             .single();
@@ -128,6 +129,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
     setSession(null);
   };
+
+  useEffect(() => {
+    const link: HTMLLinkElement =
+      document.querySelector("link[rel~='icon']") ||
+      (() => {
+        const l = document.createElement("link");
+        l.rel = "icon";
+        document.head.appendChild(l);
+        return l;
+      })();
+
+    if (organization?.logo_url) {
+      link.href = organization.logo_url;
+      link.type = undefined;
+    } else {
+      link.href = "/favicon.svg";
+      link.type = undefined;
+    }
+  }, [organization?.logo_url]);
 
   const isAdmin = !!profile && ADMIN_ROLES.includes(profile.role);
 

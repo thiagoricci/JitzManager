@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.42.0";
 import Stripe from "https://esm.sh/stripe@12.3.0";
+import { provisionSelfSignup } from "../_shared/provision-signup.ts";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -50,7 +51,26 @@ serve(async (req) => {
 
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
-      const { studentId, planId, organizationId, sessionType } = session.metadata || {};
+      let { studentId, planId, organizationId, sessionType } = session.metadata || {};
+
+      // Payment Links don't reliably copy their metadata onto the resulting
+      // Checkout Session. For self-signup links we set subscription_data.metadata,
+      // so recover it from the subscription when the session lacks it.
+      if (!sessionType && session.payment_link && session.subscription) {
+        try {
+          const connectedAccountId = event.account;
+          const sub = await stripe.subscriptions.retrieve(
+            session.subscription as string,
+            connectedAccountId ? { stripeAccount: connectedAccountId } : {}
+          );
+          sessionType = sub.metadata?.sessionType ?? sessionType;
+          planId = sub.metadata?.planId ?? planId;
+          organizationId = sub.metadata?.organizationId ?? organizationId;
+          studentId = sub.metadata?.studentId ?? studentId;
+        } catch (metaErr) {
+          console.error("Error recovering metadata from subscription:", metaErr);
+        }
+      }
 
       console.log("Checkout session completed:", {
         mode: session.mode,
@@ -58,6 +78,7 @@ serve(async (req) => {
         studentId,
         planId,
         organizationId,
+        fromPaymentLink: !!session.payment_link,
       });
 
       // Handle Platform Subscription
@@ -91,6 +112,35 @@ serve(async (req) => {
 
         console.log(`Successfully activated platform subscription for org: ${organizationId}`);
         return new Response(JSON.stringify({ received: true, type: "platform_subscription" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Handle STUDENT SELF-SIGNUP via a shared Payment Link (backup path —
+      // the /enroll-success redirect provisions this synchronously too, and the
+      // shared helper is idempotent on subscription_id so they don't collide).
+      if (sessionType === "student_self_signup") {
+        console.log("=== PROCESSING STUDENT SELF-SIGNUP ===");
+
+        if (!planId || !organizationId) {
+          console.error("Missing planId/organizationId in self-signup session metadata");
+          return new Response("Error: Missing metadata in self-signup session", { status: 400 });
+        }
+
+        const result = await provisionSelfSignup(stripe, supabaseAdmin, {
+          organizationId,
+          planId,
+          connectedAccountId: event.account,
+          customerId: (session.customer as string) ?? null,
+          subscriptionId: (session.subscription as string) ?? null,
+          amountTotal: session.amount_total ?? null,
+          name: session.customer_details?.name ?? null,
+          email: session.customer_details?.email ?? null,
+          phone: session.customer_details?.phone ?? null,
+        });
+
+        console.log(`Successfully processed self-signup for student: ${result.studentId} (already=${result.alreadyProvisioned})`);
+        return new Response(JSON.stringify({ received: true, type: "student_self_signup" }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }

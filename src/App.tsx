@@ -22,6 +22,9 @@ import SignUp from "./pages/SignUp";
 import Onboarding from "./pages/Onboarding";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentCancelled from "./pages/PaymentCancelled";
+import EnrollSuccess from "./pages/EnrollSuccess";
+import Join from "./pages/Join";
+import Waiver from "./pages/Waiver";
 import StripeConnectCallback from "./pages/StripeConnectCallback";
 import PasswordRecovery from "./pages/PasswordRecovery";
 import ResetPassword from "./pages/ResetPassword";
@@ -57,22 +60,27 @@ const App = () => (
 
             <Route path="/" element={<Landing />} />
             <Route path="/documentation" element={<Documentation />} />
+            <Route path="/enroll-success" element={<EnrollSuccess />} />
+            <Route path="/join/:organizationId/:planId" element={<Join />} />
+            <Route path="/waiver/:token" element={<Waiver />} />
 
             <Route element={<AccountThemeScope><Outlet /></AccountThemeScope>}>
-              <Route path="/dashboard" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-              <Route path="/students" element={<ProtectedRoute><Layout><Students /></Layout></ProtectedRoute>} />
-              <Route path="/student/:id" element={<ProtectedRoute><Layout><StudentDetail /></Layout></ProtectedRoute>} />
-              <Route path="/add-student" element={<ProtectedRoute><Layout><AddStudent /></Layout></ProtectedRoute>} />
-              <Route path="/student/:id/edit" element={<ProtectedRoute><Layout><EditStudent /></Layout></ProtectedRoute>} />
-              <Route path="/memberships" element={<ProtectedRoute><Layout><Memberships /></Layout></ProtectedRoute>} />
-              <Route path="/membership/:id" element={<ProtectedRoute><Layout><MembershipDetail /></Layout></ProtectedRoute>} />
-              <Route path="/attendance" element={<ProtectedRoute><Layout><Attendance /></Layout></ProtectedRoute>} />
-              <Route path="/schedule" element={<ProtectedRoute><Layout><Schedule /></Layout></ProtectedRoute>} />
-              <Route path="/settings" element={<ProtectedRoute requireAdmin><Layout><Settings /></Layout></ProtectedRoute>} />
-              <Route path="/profile" element={<ProtectedRoute><Layout><Profile /></Layout></ProtectedRoute>} />
-              <Route path="/help-center" element={<ProtectedRoute><Layout><HelpCenter /></Layout></ProtectedRoute>} />
-              <Route path="/payment-success" element={<ProtectedRoute><Layout><PaymentSuccess /></Layout></ProtectedRoute>} />
-              <Route path="/payment-cancelled" element={<ProtectedRoute><Layout><PaymentCancelled /></Layout></ProtectedRoute>} />
+              <Route element={<ProtectedRoute><Layout><Outlet /></Layout></ProtectedRoute>}>
+                <Route path="/dashboard" element={<Index />} />
+                <Route path="/students" element={<Students />} />
+                <Route path="/student/:id" element={<StudentDetail />} />
+                <Route path="/add-student" element={<AddStudent />} />
+                <Route path="/student/:id/edit" element={<EditStudent />} />
+                <Route path="/memberships" element={<Memberships />} />
+                <Route path="/membership/:id" element={<MembershipDetail />} />
+                <Route path="/attendance" element={<Attendance />} />
+                <Route path="/schedule" element={<Schedule />} />
+                <Route path="/settings" element={<ProtectedRoute requireAdmin><Settings /></ProtectedRoute>} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/help-center" element={<HelpCenter />} />
+                <Route path="/payment-success" element={<PaymentSuccess />} />
+                <Route path="/payment-cancelled" element={<PaymentCancelled />} />
+              </Route>
               <Route path="/stripe-connect-callback" element={<ProtectedRoute><StripeConnectCallback /></ProtectedRoute>} />
             </Route>
             

@@ -21,7 +21,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
-      navigate("/");
+      navigate("/login");
     } catch (error: any) {
       toast.error(error.message || "Error signing out");
     }

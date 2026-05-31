@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Building2, MapPin, Globe, Save, CreditCard, Link, Unlink, Loader2, ExternalLink, AlertTriangle } from "lucide-react";
+import { Building2, MapPin, Globe, Save, CreditCard, Link, Unlink, Loader2, ExternalLink, AlertTriangle, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -33,6 +33,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -283,9 +284,74 @@ export default function Settings() {
 
       <AppearanceCard />
       <StaffManagementCard />
+      <WaiverCard />
       <StripeConnectCard />
       <DangerZoneCard />
     </div>
+  );
+}
+
+function WaiverCard() {
+  const { organization, refreshProfile } = useAuth();
+  const [text, setText] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (organization) setText(organization.waiver_text || "");
+  }, [organization]);
+
+  const handleSave = async () => {
+    if (!organization) return;
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from("organizations")
+        .update({ waiver_text: text.trim() || null })
+        .eq("id", organization.id);
+      if (error) throw error;
+      await refreshProfile();
+      toast.success("Waiver text saved");
+    } catch (error) {
+      console.error("Error saving waiver text:", error);
+      toast.error("Failed to save waiver text");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <FileText className="h-5 w-5" />
+          Liability Waiver
+        </CardTitle>
+        <CardDescription>
+          The waiver students read and sign through their waiver link. Leave blank to use a
+          standard default waiver.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <Textarea
+          rows={10}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="Paste your academy's waiver / liability wording here..."
+        />
+        <div className="flex justify-end">
+          <Button onClick={handleSave} disabled={saving}>
+            {saving ? (
+              "Saving..."
+            ) : (
+              <>
+                <Save className="mr-2 h-4 w-4" />
+                Save Waiver
+              </>
+            )}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 

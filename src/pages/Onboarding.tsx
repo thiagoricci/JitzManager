@@ -10,7 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 export default function Onboarding() {
   const navigate = useNavigate();
-  const { user, refreshProfile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const [orgName, setOrgName] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -54,14 +54,20 @@ export default function Onboarding() {
         orgId = org.id;
       }
 
-      // 2. Create or Update Profile linked to Organization
-      const { error: profileError } = await supabase.from("profiles").upsert({
-        id: user.id,
-        organization_id: orgId,
-        role: "owner",
-      });
+      // 2. Link the profile to the organization only if it isn't already.
+      //    Paid signups are provisioned by the complete-signup edge function
+      //    (service role), which already sets organization_id and role. Writing
+      //    role/organization_id again here would be a self-update that trips the
+      //    prevent_profile_privilege_escalation trigger and fails with a 400.
+      if (profile?.organization_id !== orgId) {
+        const { error: profileError } = await supabase.from("profiles").upsert({
+          id: user.id,
+          organization_id: orgId,
+          role: "owner",
+        });
 
-      if (profileError) throw profileError;
+        if (profileError) throw profileError;
+      }
 
       toast.success("Organization created successfully!");
       

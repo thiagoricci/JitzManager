@@ -9,11 +9,10 @@ import {
   SidebarGroupContent,
   SidebarHeader,
   SidebarMenu,
-  SidebarMenuButton,
   SidebarMenuItem,
   SidebarSeparator,
-  useSidebar,
 } from "@/components/ui/sidebar";
+import { cn } from "@/lib/utils";
 
 const mainItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -24,7 +23,6 @@ const mainItems = [
 ];
 
 export function AppSidebar() {
-  const { open } = useSidebar();
   const { organization, isAdmin } = useAuth();
 
   const secondaryItems = [
@@ -34,29 +32,23 @@ export function AppSidebar() {
   ];
 
   return (
-    <Sidebar className={open ? "w-64" : "w-16"} collapsible="icon">
+    <Sidebar collapsible="icon">
       <SidebarHeader className="p-4">
-        {open && (
-          <div className="px-2 flex items-center gap-3">
-            {organization?.logo_url && (
-              <img
-                src={organization.logo_url}
-                alt={organization?.name || "Logo"}
-                className="h-12 w-12 shrink-0 object-contain rounded"
-              />
-            )}
-            <h1 className="text-base font-bold leading-tight line-clamp-2 font-display" title={organization?.name || "Academy Manager"}>
-              {organization?.name || "Academy Manager"}
-            </h1>
-          </div>
-        )}
-        {!open && organization?.logo_url && (
-          <img
-            src={organization.logo_url}
-            alt=""
-            className="h-12 w-12 mx-auto object-contain"
-          />
-        )}
+        <div className="px-2 flex items-center gap-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
+          {organization?.logo_url && (
+            <img
+              src={organization.logo_url}
+              alt={organization?.name || "Logo"}
+              className="h-12 w-12 shrink-0 object-contain rounded group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:w-10"
+            />
+          )}
+          <h1
+            className="text-base font-bold leading-tight line-clamp-2 font-display group-data-[collapsible=icon]:hidden"
+            title={organization?.name || "Academy Manager"}
+          >
+            {organization?.name || "Academy Manager"}
+          </h1>
+        </div>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
@@ -64,17 +56,21 @@ export function AppSidebar() {
             <SidebarMenu>
               {mainItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild size="lg" className="text-lg h-12">
-                    <NavLink
-                      to={item.url}
-                      end
-                      className="hover:bg-muted/50"
-                      activeClassName="bg-muted text-primary font-medium"
-                    >
-                      <item.icon className="h-6 w-6" />
-                      {open && <span className="ml-3">{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
+                  <NavLink
+                    to={item.url}
+                    end
+                    className={cn(
+                      "flex items-center rounded-md p-2 h-12",
+                      "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                      "transition-colors",
+                      "gap-3 px-4",
+                      "group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-2 group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:w-12"
+                    )}
+                    activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                  >
+                    <item.icon className="h-6 w-6 shrink-0 group-data-[collapsible=icon]:h-7 group-data-[collapsible=icon]:w-7" />
+                    <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
+                  </NavLink>
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
@@ -86,17 +82,21 @@ export function AppSidebar() {
             <SidebarMenu>
               {secondaryItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild size="lg" className="text-lg h-12">
-                    <NavLink
-                      to={item.url}
-                      end
-                      className="hover:bg-muted/50"
-                      activeClassName="bg-muted text-primary font-medium"
-                    >
-                      <item.icon className="h-6 w-6" />
-                      {open && <span className="ml-3">{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
+                  <NavLink
+                    to={item.url}
+                    end
+                    className={cn(
+                      "flex items-center rounded-md p-2 h-12",
+                      "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                      "transition-colors",
+                      "gap-3 px-4",
+                      "group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-2 group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:w-12"
+                    )}
+                    activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                  >
+                    <item.icon className="h-6 w-6 shrink-0 group-data-[collapsible=icon]:h-7 group-data-[collapsible=icon]:w-7" />
+                    <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
+                  </NavLink>
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>

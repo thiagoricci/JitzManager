@@ -15,15 +15,15 @@ export default function Documentation() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-sm">
-        <div className="container mx-auto px-4 h-16 flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
+        <div className="container mx-auto px-4 h-16 flex justify-between items-center gap-2">
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+            <Button variant="ghost" size="icon" className="shrink-0" onClick={() => navigate("/")}>
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <h1 className="text-xl font-bold">Documentation</h1>
+            <h1 className="text-lg sm:text-xl font-bold truncate">Documentation</h1>
           </div>
-          <div className="flex gap-4">
-            <Button variant="ghost" onClick={() => navigate("/login")}>
+          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+            <Button variant="ghost" className="hidden sm:inline-flex" onClick={() => navigate("/login")}>
               Login
             </Button>
             <Button onClick={() => navigate("/")}>Get Started</Button>
@@ -35,8 +35,8 @@ export default function Documentation() {
         <div className="space-y-12">
           {/* Introduction */}
           <section>
-            <h2 className="text-3xl font-bold mb-6 flex items-center gap-3">
-              <Book className="h-8 w-8 text-primary" />
+            <h2 className="text-2xl sm:text-3xl font-bold mb-6 flex items-center gap-3">
+              <Book className="h-7 w-7 sm:h-8 sm:w-8 text-primary shrink-0" />
               Introduction
             </h2>
             <p className="text-lg text-muted-foreground leading-relaxed">
@@ -46,7 +46,7 @@ export default function Documentation() {
 
           {/* Features */}
           <section>
-            <h2 className="text-3xl font-bold mb-8">Core Features</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold mb-8">Core Features</h2>
             <div className="grid gap-8 md:grid-cols-2">
               <div className="bg-card p-6 rounded-xl border shadow-sm">
                 <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
@@ -92,8 +92,8 @@ export default function Documentation() {
 
           {/* Getting Started */}
           <section>
-            <h2 className="text-3xl font-bold mb-6 flex items-center gap-3">
-              <Settings className="h-8 w-8 text-primary" />
+            <h2 className="text-2xl sm:text-3xl font-bold mb-6 flex items-center gap-3">
+              <Settings className="h-7 w-7 sm:h-8 sm:w-8 text-primary shrink-0" />
               Getting Started Guide
             </h2>
             <div className="space-y-6">
@@ -126,8 +126,8 @@ export default function Documentation() {
 
           {/* FAQ */}
           <section>
-            <h2 className="text-3xl font-bold mb-6 flex items-center gap-3">
-              <HelpCircle className="h-8 w-8 text-primary" />
+            <h2 className="text-2xl sm:text-3xl font-bold mb-6 flex items-center gap-3">
+              <HelpCircle className="h-7 w-7 sm:h-8 sm:w-8 text-primary shrink-0" />
               Frequently Asked Questions
             </h2>
             <Accordion type="single" collapsible className="w-full">

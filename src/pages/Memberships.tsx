@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Users, DollarSign, TrendingUp, Pencil, Trash2, Eye } from "lucide-react";
+import { Plus, Users, DollarSign, TrendingUp, Pencil, Trash2, Eye, Link2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +8,7 @@ import StatCard from "@/components/StatCard";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { MembershipDialog, MembershipFormValues } from "@/components/MembershipDialog";
+import { SignupLinkDialog } from "@/components/SignupLinkDialog";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -37,6 +38,19 @@ export default function Memberships() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
   const [planToDelete, setPlanToDelete] = useState<any>(null);
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+  const [linkPlanName, setLinkPlanName] = useState<string | undefined>(undefined);
+  const [linkUrl, setLinkUrl] = useState<string | null>(null);
+
+  const handleGenerateLink = (plan: any) => {
+    if (!organization?.id) {
+      toast.error("Organization not found");
+      return;
+    }
+    setLinkPlanName(plan.name);
+    setLinkUrl(`${window.location.origin}/join/${organization.id}/${plan.id}`);
+    setLinkDialogOpen(true);
+  };
 
   const { data: plans, isLoading: isLoadingPlans } = useQuery({
     queryKey: ["membershipPlans", organization?.id],
@@ -299,6 +313,19 @@ export default function Memberships() {
                   <Eye className="h-4 w-4 mr-2" />
                   View Students
                 </Button>
+                {plan.price !== "0" && plan.price !== "0.00" && (
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleGenerateLink(plan);
+                    }}
+                  >
+                    <Link2 className="h-4 w-4 mr-2" />
+                    Copy Sign-up Link
+                  </Button>
+                )}
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
@@ -335,6 +362,14 @@ export default function Memberships() {
         initialData={selectedPlan}
         onSubmit={handleSubmit}
         isSubmitting={createMutation.isPending || updateMutation.isPending}
+      />
+
+      <SignupLinkDialog
+        open={linkDialogOpen}
+        onOpenChange={setLinkDialogOpen}
+        planName={linkPlanName}
+        url={linkUrl}
+        isLoading={false}
       />
 
       <AlertDialog open={!!planToDelete} onOpenChange={(open) => !open && setPlanToDelete(null)}>
