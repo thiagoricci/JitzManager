@@ -129,7 +129,7 @@ export default function ActivateStudentDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="text-2xl">Activate Student Membership</DialogTitle>
           <DialogDescription>
@@ -141,7 +141,7 @@ export default function ActivateStudentDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        <div className="space-y-6 py-4 overflow-y-auto flex-1 min-h-0">
           {/* Plan Selection */}
           <div className="space-y-3">
             <label className="text-sm font-medium text-foreground">Select Membership Plan</label>
