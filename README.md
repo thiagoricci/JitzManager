@@ -91,7 +91,7 @@ npm install
 
 ### 3. Environment Configuration
 
-Create a `.env` file in the root directory and add the following environment variables:
+Create a `.env.local` file in the root directory and add the following environment variables:
 
 ```env
 # Supabase Configuration
@@ -144,27 +144,36 @@ The application will be available at `http://localhost:5173`
 ## 📁 Project Structure
 
 ```
-jiu-jitsu-mngtm/
+jitz-manager/
 ├── public/                      # Static assets
 ├── src/
 │   ├── components/              # Reusable UI components
 │   │   ├── ui/                 # shadcn/ui primitives
-│   │   ├── dashboard/          # Dashboard-specific components
+│   │   ├── dashboard/          # Dashboard-specific chart components
+│   │   ├── AccountSettingsCard.tsx
 │   │   ├── ActivateStudentDialog.tsx
+│   │   ├── AppearanceCard.tsx
 │   │   ├── AppSidebar.tsx
 │   │   ├── BeltBadge.tsx
 │   │   ├── ImportStudentsDialog.tsx
 │   │   ├── Layout.tsx
+│   │   ├── LogoUpload.tsx
 │   │   ├── MembershipDialog.tsx
 │   │   ├── NavLink.tsx
 │   │   ├── PaymentHistory.tsx
 │   │   ├── PaymentMethods.tsx
 │   │   ├── PersonalInformationCard.tsx
 │   │   ├── ProtectedRoute.tsx
+│   │   ├── ScrollToTop.tsx
+│   │   ├── SignupLinkDialog.tsx
+│   │   ├── StaffManagementCard.tsx
 │   │   ├── StatCard.tsx
-│   │   └── StudentProfileCard.tsx
+│   │   ├── StudentProfileCard.tsx
+│   │   ├── WaiverBadge.tsx
+│   │   └── WaiverSignForm.tsx
 │   ├── contexts/                # React context providers
 │   │   └── AuthContext.tsx
+│   ├── data/                    # Static data and constants
 │   ├── hooks/                   # Custom React hooks
 │   │   ├── use-mobile.tsx
 │   │   ├── use-toast.ts
@@ -174,32 +183,78 @@ jiu-jitsu-mngtm/
 │   │       ├── client.ts
 │   │       └── types.ts
 │   ├── lib/                     # Utility functions
+│   │   ├── brand-theme.ts
 │   │   ├── date.ts
+│   │   ├── money.ts            # Typed money + billing-period helpers
 │   │   ├── supabase.ts
+│   │   ├── themes.ts
 │   │   └── utils.ts
 │   ├── pages/                   # Route components
-│   │   ├── Dashboard.tsx
-│   │   ├── Students.tsx
-│   │   ├── StudentDetail.tsx
-│   │   ├── Attendance.tsx
-│   │   ├── Schedule.tsx
-│   │   ├── Memberships.tsx
-│   │   ├── Settings.tsx
+│   │   ├── AddStudent.tsx
 │   │   ├── AdminDashboard.tsx
 │   │   ├── AdminLogin.tsx
-│   │   └── ...
+│   │   ├── Attendance.tsx
+│   │   ├── Dashboard.tsx
+│   │   ├── Documentation.tsx
+│   │   ├── EditStudent.tsx
+│   │   ├── EnrollSuccess.tsx
+│   │   ├── HelpCenter.tsx
+│   │   ├── Index.tsx
+│   │   ├── Join.tsx
+│   │   ├── Landing.tsx
+│   │   ├── Login.tsx
+│   │   ├── MembershipDetail.tsx
+│   │   ├── Memberships.tsx
+│   │   ├── NotFound.tsx
+│   │   ├── Onboarding.tsx
+│   │   ├── PasswordRecovery.tsx
+│   │   ├── PaymentCancelled.tsx
+│   │   ├── PaymentSuccess.tsx
+│   │   ├── Profile.tsx
+│   │   ├── ResetPassword.tsx
+│   │   ├── Schedule.tsx
+│   │   ├── Settings.tsx
+│   │   ├── SignUp.tsx
+│   │   ├── StripeConnectCallback.tsx
+│   │   ├── StudentDetail.tsx
+│   │   ├── Students.tsx
+│   │   └── Waiver.tsx
 │   ├── App.tsx                  # Main application with routing
+│   ├── App.css                  # Application-specific styles
 │   ├── main.tsx                 # Application entry point
 │   └── index.css                # Global styles
 ├── supabase/
 │   ├── functions/               # Edge Functions
-│   │   ├── stripe-webhook/
-│   │   ├── create-checkout-session/
+│   │   ├── _shared/            # Shared utilities
+│   │   ├── cancel-subscription/
 │   │   ├── charge-student/
-│   │   └── ...
+│   │   ├── complete-signup/
+│   │   ├── complete-signup-enrollment/
+│   │   ├── complete-stripe-connect/
+│   │   ├── create-checkout-session/
+│   │   ├── create-enrollment-checkout/
+│   │   ├── create-platform-checkout-session/
+│   │   ├── create-setup-session/
+│   │   ├── create-staff/
+│   │   ├── create-stripe-connect-link/
+│   │   ├── delete-account/
+│   │   ├── delete-payment-method/
+│   │   ├── delete-staff/
+│   │   ├── disconnect-stripe-account/
+│   │   ├── exchange-stripe-code/
+│   │   ├── get-enrollment-details/
+│   │   ├── get-payment-methods/
+│   │   ├── get-waiver/
+│   │   ├── refund-payment/
+│   │   ├── retry-payment/
+│   │   ├── set-default-payment-method/
+│   │   ├── sign-waiver/
+│   │   ├── stripe-webhook/
+│   │   ├── sync-membership-plan/
+│   │   └── verify-payment-and-update-student/
 │   ├── migrations/              # Database migrations
 │   └── config.toml              # Supabase configuration
-├── .env                         # Environment variables (not in git)
+├── .env.local                   # Environment variables (not in git)
 ├── package.json                 # Project dependencies
 ├── tsconfig.json                # TypeScript configuration
 ├── vite.config.ts              # Vite configuration
@@ -299,17 +354,30 @@ The application uses Supabase Edge Functions for secure Stripe operations:
 
 - **`stripe-webhook`**: Handles Stripe webhook events (payment.success, payment.failed, etc.)
 - **`create-checkout-session`**: Creates Stripe checkout sessions for membership payments
+- **`create-enrollment-checkout`**: Creates checkout sessions for student self-enrollment
 - **`create-setup-session`**: Creates Stripe setup sessions for adding payment methods
 - **`charge-student`**: Charges a student's saved payment method
+- **`refund-payment`**: Refunds a previous payment
+- **`retry-payment`**: Retries a failed payment
 - **`delete-payment-method`**: Removes a saved payment method
 - **`set-default-payment-method`**: Sets the default payment method
 - **`get-payment-methods`**: Retrieves saved payment methods
 - **`create-stripe-connect-link`**: Creates Stripe Connect onboarding links
 - **`complete-stripe-connect`**: Handles Stripe Connect OAuth callback
+- **`exchange-stripe-code`**: Exchanges Stripe authorization codes
 - **`disconnect-stripe-account`**: Disconnects a Stripe account
 - **`create-platform-checkout-session`**: Creates checkout for platform subscriptions
 - **`cancel-subscription`**: Cancels a subscription
 - **`verify-payment-and-update-student`**: Verifies payment and updates student status
+- **`complete-signup`**: Completes user signup process
+- **`complete-signup-enrollment`**: Completes signup for self-enrolled students
+- **`create-staff`**: Creates staff member accounts
+- **`delete-staff`**: Removes staff member access
+- **`get-enrollment-details`**: Retrieves enrollment details for a signup link
+- **`get-waiver`**: Retrieves waiver details
+- **`sign-waiver`**: Records a signed digital waiver
+- **`sync-membership-plan`**: Syncs membership plans with Stripe
+- **`delete-account`**: Handles account deletion requests
 
 ## 🎨 UI Components
 
@@ -433,7 +501,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 If you encounter any issues or have questions:
 
-1. Check the [Issues](https://github.com/yourusername/bjj-academy-manager/issues) page
+1. Check the [Issues](https://github.com/yourusername/jitz-manager/issues) page
 2. Create a new issue with detailed information
 3. Join our community discussions
 
