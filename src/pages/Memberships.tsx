@@ -22,6 +22,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useNavigate } from "react-router-dom";
+import { MembershipPlanWithCounts } from "@/types/membership";
 
 export default function Memberships() {
   const queryClient = useQueryClient();
@@ -36,13 +37,13 @@ export default function Memberships() {
     }).catch((err) => console.error("Stripe sync error:", err));
   };
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<any>(null);
-  const [planToDelete, setPlanToDelete] = useState<any>(null);
+  const [selectedPlan, setSelectedPlan] = useState<MembershipPlanWithCounts | null>(null);
+  const [planToDelete, setPlanToDelete] = useState<MembershipPlanWithCounts | null>(null);
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [linkPlanName, setLinkPlanName] = useState<string | undefined>(undefined);
   const [linkUrl, setLinkUrl] = useState<string | null>(null);
 
-  const handleGenerateLink = (plan: any) => {
+  const handleGenerateLink = (plan: MembershipPlanWithCounts) => {
     if (!organization?.id) {
       toast.error("Organization not found");
       return;
@@ -150,12 +151,12 @@ export default function Memberships() {
     setIsDialogOpen(true);
   };
 
-  const handleEditPlan = (plan: any) => {
+  const handleEditPlan = (plan: MembershipPlanWithCounts) => {
     setSelectedPlan(plan);
     setIsDialogOpen(true);
   };
 
-  const handleDeletePlan = (plan: any) => {
+  const handleDeletePlan = (plan: MembershipPlanWithCounts) => {
     setPlanToDelete(plan);
   };
 

@@ -97,7 +97,7 @@ export default function SignUp() {
         // Redirect to onboarding for first-time users to set up their gym
         navigate("/onboarding");
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Signup error:", error);
       toast.error(error.message || "Error creating account");
     } finally {

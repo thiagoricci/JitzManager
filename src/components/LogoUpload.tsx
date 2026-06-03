@@ -41,7 +41,7 @@ export default function LogoUpload({ value, onChange, organizationId }: LogoUplo
       const { data } = supabase.storage.from("logos").getPublicUrl(path);
       onChange(data.publicUrl);
       toast.success("Logo uploaded");
-    } catch (err: any) {
+    } catch (err) {
       toast.error(err.message || "Failed to upload logo");
     } finally {
       setUploading(false);

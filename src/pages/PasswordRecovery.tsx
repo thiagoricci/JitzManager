@@ -25,7 +25,7 @@ export default function PasswordRecovery() {
       if (error) throw error;
 
       setMessage("Password recovery link has been sent to your email.");
-    } catch (error: any) {
+    } catch (error) {
       toast.error(error.message || "Error sending password recovery link");
     } finally {
       setLoading(false);

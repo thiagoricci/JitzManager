@@ -5,7 +5,9 @@ import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: ["dist"] },
+  // dist: build output. .kilo: local git worktree copies of the repo.
+  // supabase/functions: Deno runtime code, linted separately via Deno tooling.
+  { ignores: ["dist", ".kilo/**", "supabase/functions/**"] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ["**/*.{ts,tsx}"],

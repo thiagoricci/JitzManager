@@ -123,7 +123,7 @@ export default function Settings() {
 
       await refreshProfile();
       toast.success("Settings updated successfully");
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error updating settings:", error);
       toast.error("Failed to update settings");
     } finally {
@@ -375,7 +375,7 @@ function DangerZoneCard() {
       toast.success("Account deleted successfully");
       await signOut();
       navigate("/");
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error deleting account:", error);
       toast.error(error.message || "Failed to delete account");
       setDeleting(false);

@@ -2,8 +2,11 @@ import * as React from 'react';
 import { useIMask } from 'react-imask';
 import { Input } from '@/components/ui/input';
 
+// The accepted mask shape mirrors the first argument of useIMask (IMask's FactoryArg).
+type IMaskOptions = Parameters<typeof useIMask>[0];
+
 type MaskedInputProps = Omit<React.ComponentProps<'input'>, 'onChange' | 'value'> & {
-  mask: any;
+  mask: IMaskOptions;
   value: string;
   onValueChange: (value: string) => void;
 };

@@ -79,7 +79,7 @@ export default function Onboarding() {
       
       // Only redirect if we have successfully loaded the organization data
       navigate("/dashboard", { replace: true });
-    } catch (error: any) {
+    } catch (error) {
       toast.error(error.message || "Error creating organization");
     } finally {
       setLoading(false);

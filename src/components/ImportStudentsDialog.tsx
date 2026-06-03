@@ -26,7 +26,7 @@ interface ImportStudentsDialogProps {
   onImport: (students: StudentImportData[]) => void;
 }
 
-interface StudentImportData {
+export interface StudentImportData {
   name: string;
   email: string;
   phone: string;

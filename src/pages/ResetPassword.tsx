@@ -51,7 +51,7 @@ export default function ResetPassword() {
 
       setMessage("Password has been reset successfully. You can now login with your new password.");
       setTimeout(() => navigate("/login"), 5000);
-    } catch (error: any) {
+    } catch (error) {
       toast.error(error.message || "Error resetting password");
     } finally {
       setLoading(false);

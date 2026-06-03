@@ -30,7 +30,7 @@ export default function Login() {
       if (data?.url) {
         window.location.href = data.url;
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error creating checkout session:", error);
       toast.error(error.message || "Failed to start subscription");
     } finally {
@@ -51,7 +51,7 @@ export default function Login() {
       if (error) throw error;
 
       navigate("/dashboard");
-    } catch (error: any) {
+    } catch (error) {
       toast.error(error.message || "Error logging in");
     } finally {
       setLoading(false);

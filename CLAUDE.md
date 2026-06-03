@@ -8,6 +8,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 npm run dev          # Start dev server at http://localhost:5173
 npm run build        # Production build
 npm run lint         # ESLint
+npm run typecheck    # tsc --noEmit on the app + node tsconfigs
+npm test             # Run the Vitest suite once
+npm run test:watch   # Vitest in watch mode
 npm run preview      # Preview production build
 
 supabase db push                        # Apply migrations to linked project
@@ -19,6 +22,17 @@ npx shadcn@latest add <component>       # Add a shadcn/ui component
 ```
 
 ## Architecture
+
+### Testing & CI
+
+Tests run on **Vitest** (config in `vitest.config.ts`). Two kinds of tests:
+
+- **Unit tests** are co-located (e.g. `src/lib/date.test.ts`) and cover pure logic like the timezone helpers.
+- **RLS tests** in `tests/rls/` prove tenant isolation by running the *real* migrations against Postgres and querying as different users. `tests/rls/supabase-shim.sql` recreates the Supabase-provided pieces (the `auth`/`storage` schemas, `auth.uid()`/`auth.jwt()`/`auth.role()`, and the standard roles) so the migration SQL runs unmodified on a plain Postgres. Users are impersonated inside a transaction via `SET LOCAL ROLE authenticated` + `request.jwt.claims`.
+
+The RLS suite is **skipped** unless `TEST_DATABASE_URL` (or `DATABASE_URL`) points at a Postgres instance, so `npm test` works locally without a database. To run it locally: `createdb jitz_rls_test && TEST_DATABASE_URL=postgresql://<user>@localhost:5432/jitz_rls_test npm test`.
+
+CI (`.github/workflows/ci.yml`) runs `lint` + `typecheck` + `test` (with a Postgres service) on every PR and push to `main`. Make these the required status checks in branch protection so failures block merge.
 
 ### Multi-Tenant Model
 

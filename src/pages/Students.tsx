@@ -52,7 +52,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import ImportStudentsDialog from "@/components/ImportStudentsDialog";
+import ImportStudentsDialog, { StudentImportData } from "@/components/ImportStudentsDialog";
 
 export default function Students() {
   const { organization } = useAuth();
@@ -84,7 +84,7 @@ export default function Students() {
   });
 
   const importStudentsMutation = useMutation({
-    mutationFn: async (students: any[]) => {
+    mutationFn: async (students: StudentImportData[]) => {
       const studentsToInsert = students.map(student => ({
         name: student.name,
         email: student.email || null,

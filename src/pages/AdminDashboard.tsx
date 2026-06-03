@@ -50,7 +50,7 @@ const AdminDashboard = () => {
         totalGyms: data?.length || 0,
         connectedStripe: data?.filter(org => org.stripe_account_id).length || 0,
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error fetching data:", error);
       toast.error("Failed to fetch dashboard data");
     } finally {

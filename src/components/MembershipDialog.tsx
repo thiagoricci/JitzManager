@@ -31,6 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { MembershipPlan } from "@/types/membership";
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -46,7 +47,7 @@ export type MembershipFormValues = z.infer<typeof formSchema>;
 interface MembershipDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  initialData?: any; // Using any for now as we infer the type from Supabase
+  initialData?: MembershipPlan | null;
   onSubmit: (data: MembershipFormValues) => void;
   isSubmitting?: boolean;
 }
@@ -87,7 +88,7 @@ export function MembershipDialog({
           description: initialData.description || "",
           price: initialData.price,
           period: initialData.period,
-          status: initialData.status,
+          status: initialData.status as MembershipFormValues["status"],
           features: initialData.features
             ? initialData.features.map((f: string) => ({ value: f }))
             : [],
