@@ -13,10 +13,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { toast } from "sonner";
+import { formatMoney, formatPeriod } from "@/lib/money";
 
 interface EnrollmentDetails {
   organizationName: string;
-  plan: { name: string; description: string | null; price: string; period: string };
+  plan: { name: string; description: string | null; price: string; period: string; currency?: string };
 }
 
 export default function Join() {
@@ -92,7 +93,7 @@ export default function Join() {
     );
   }
 
-  const priceLabel = `${details.plan.price} / ${details.plan.period.toLowerCase()}`;
+  const priceLabel = `${formatMoney(details.plan.price, details.plan.currency)} / ${formatPeriod(details.plan.period).toLowerCase()}`;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/50 px-4 py-10">

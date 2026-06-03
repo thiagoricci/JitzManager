@@ -176,10 +176,10 @@ serve(async (req) => {
       });
     }
 
-    // Check if this is a trial plan (free with Daily or Weekly period)
+    // Check if this is a trial plan (free with a daily or weekly period)
     const isTrialPlan =
-      (plan.price === "0" || plan.price === "0.00") &&
-      ["Daily", "Weekly"].includes(plan.period);
+      parseFloat(plan.price) === 0 &&
+      ["daily", "weekly"].includes((plan.period ?? "").toLowerCase());
 
     // 5. Update the student's membership_plan_id, membership_status, and save stripe_customer_id
     const { error: updateError } = await supabase

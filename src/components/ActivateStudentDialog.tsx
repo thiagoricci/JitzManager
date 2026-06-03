@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { CreditCard, DollarSign, Calendar, Shield, Check, CalendarClock, Tag } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatMoney, formatPeriod, isFreePrice, isTrialPeriod, toAmount } from "@/lib/money";
 
 export interface MembershipDiscount {
   type: "percent" | "amount";
@@ -20,6 +21,7 @@ interface MembershipPlan {
   name: string;
   price: string;
   period: string;
+  currency?: string;
   description?: string;
   features?: string[];
 }
@@ -87,17 +89,16 @@ export default function ActivateStudentDialog({
     studentStatus === "student"
       ? plans.filter((plan) => {
           const isTrialPlan =
-            (plan.price === "0" || plan.price === "0.00") &&
-            ["Daily", "Weekly"].includes(plan.period);
+            isFreePrice(plan.price) && isTrialPeriod(plan.period);
           return !isTrialPlan;
         })
       : plans;
 
   const selectedPlan = filteredPlans.find((p) => p.id.toString() === selectedPlanId);
-  const isFreePlan = selectedPlan?.price === "0" || selectedPlan?.price === "0.00";
+  const isFreePlan = isFreePrice(selectedPlan?.price);
   const isFutureStart = billingStartDate > todayString();
 
-  const planPrice = selectedPlan ? parseFloat(selectedPlan.price) : 0;
+  const planPrice = toAmount(selectedPlan?.price);
   const parsedDiscount = parseFloat(discountValue);
   const discountIsValid =
     discountEnabled &&
@@ -155,9 +156,9 @@ export default function ActivateStudentDialog({
                     <div className="flex items-center justify-between gap-4 w-full">
                       <span>{plan.name}</span>
                       <span className="text-muted-foreground">
-                        {plan.price === "0" || plan.price === "0.00"
+                        {isFreePrice(plan.price)
                           ? "Free"
-                          : `$${plan.price}/${plan.period}`}
+                          : `${formatMoney(plan.price, plan.currency)}/${formatPeriod(plan.period)}`}
                       </span>
                     </div>
                   </SelectItem>
@@ -177,7 +178,7 @@ export default function ActivateStudentDialog({
                   </div>
                   <Badge variant="secondary" className="bg-primary/10 text-primary">
                     <Calendar className="h-3 w-3 mr-1" />
-                    {selectedPlan.period}
+                    {formatPeriod(selectedPlan.period)}
                   </Badge>
                 </div>
 
@@ -206,17 +207,17 @@ export default function ActivateStudentDialog({
                     <div className="flex items-center gap-2">
                       {discountIsValid && !isFreePlan && (
                         <span className="text-base text-muted-foreground line-through">
-                          ${planPrice.toFixed(2)}
+                          {formatMoney(planPrice, selectedPlan.currency)}
                         </span>
                       )}
                       <span className="text-2xl font-bold text-foreground">
-                        {isFreePlan ? "Free" : `$${firstAmount.toFixed(2)}`}
+                        {isFreePlan ? "Free" : formatMoney(firstAmount, selectedPlan.currency)}
                       </span>
                     </div>
                   </div>
                   {discountIsValid && !isFreePlan && (
                     <p className="text-xs text-emerald-600 text-right mt-1">
-                      Discount applies to the first {selectedPlan.period.toLowerCase()} only; renews at ${planPrice.toFixed(2)}.
+                      Discount applies to the first {formatPeriod(selectedPlan.period).toLowerCase()} only; renews at {formatMoney(planPrice, selectedPlan.currency)}.
                     </p>
                   )}
                 </div>

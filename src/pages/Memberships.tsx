@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useNavigate } from "react-router-dom";
 import { MembershipPlanWithCounts } from "@/types/membership";
+import { formatMoney, formatPeriod, formatPrice, isFreePrice, toAmount } from "@/lib/money";
 
 export default function Memberships() {
   const queryClient = useQueryClient();
@@ -193,9 +194,8 @@ export default function Memberships() {
   let totalRevenue = 0;
   activeStudents.forEach(student => {
     const plan = plans?.find(p => p.id === student.membership_plan_id);
-    if (plan && plan.price) {
-      const price = parseFloat(plan.price.replace(/[^0-9.-]+/g, ""));
-      totalRevenue += isNaN(price) ? 0 : price;
+    if (plan) {
+      totalRevenue += toAmount(plan.price);
     }
   });
 
@@ -225,7 +225,7 @@ export default function Memberships() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Monthly Revenue"
-          value={`R$ ${totalRevenue.toLocaleString('pt-BR')}`}
+          value={formatMoney(totalRevenue)}
           icon={DollarSign}
           trend="+12.5%"
         />
@@ -237,7 +237,7 @@ export default function Memberships() {
         />
         <StatCard
           title="Average Value"
-          value={`R$ ${Math.round(averageValue).toLocaleString('pt-BR')}`}
+          value={formatMoney(averageValue)}
           icon={TrendingUp}
         />
         <StatCard
@@ -277,9 +277,9 @@ export default function Memberships() {
               <div>
                 <div className="flex items-baseline gap-1">
                   <span className="text-4xl font-bold text-foreground">
-                    {plan.price === "0" || plan.price === "0.00" ? "Free" : plan.price}
+                    {formatPrice(plan.price, plan.currency)}
                   </span>
-                  <span className="text-muted-foreground">/{plan.period}</span>
+                  <span className="text-muted-foreground">/{formatPeriod(plan.period)}</span>
                 </div>
 
                 <div className="flex items-center gap-2 text-sm mt-4">
@@ -314,7 +314,7 @@ export default function Memberships() {
                   <Eye className="h-4 w-4 mr-2" />
                   View Students
                 </Button>
-                {plan.price !== "0" && plan.price !== "0.00" && (
+                {!isFreePrice(plan.price) && (
                   <Button
                     variant="outline"
                     className="w-full"

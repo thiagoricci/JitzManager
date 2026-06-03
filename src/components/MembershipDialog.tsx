@@ -32,15 +32,40 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { MembershipPlan } from "@/types/membership";
+import { isFreePrice, isTrialPeriod, toAmount } from "@/lib/money";
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   description: z.string().optional(),
-  price: z.string().min(1, "Price is required"),
-  period: z.string().min(1, "Period is required"),
+  price: z.coerce
+    .number({ invalid_type_error: "Price is required" })
+    .min(0, "Price can't be negative"),
+  period: z.enum([
+    "daily",
+    "weekly",
+    "monthly",
+    "quarterly",
+    "biannual",
+    "annual",
+  ]),
+  currency: z.string().min(3).max(3),
+  setup_fee: z.coerce
+    .number({ invalid_type_error: "Setup fee must be a number" })
+    .min(0, "Setup fee can't be negative"),
+  billing_day_of_month: z.preprocess(
+    (v) => (v === "" || v === null || v === undefined ? null : Number(v)),
+    z
+      .number()
+      .int()
+      .min(1, "Day must be 1–31")
+      .max(31, "Day must be 1–31")
+      .nullable()
+  ),
   status: z.enum(["active", "inactive"]),
   features: z.array(z.object({ value: z.string() })).optional(),
 });
+
+const CURRENCIES = ["USD", "BRL", "EUR", "GBP"] as const;
 
 export type MembershipFormValues = z.infer<typeof formSchema>;
 
@@ -66,8 +91,11 @@ export function MembershipDialog({
     defaultValues: {
       name: "",
       description: "",
-      price: "",
-      period: "Monthly",
+      price: 0,
+      period: "monthly",
+      currency: "USD",
+      setup_fee: 0,
+      billing_day_of_month: null,
       status: "active",
       features: [],
     },
@@ -81,13 +109,17 @@ export function MembershipDialog({
   useEffect(() => {
     if (open) {
       if (initialData) {
-        const isTrialPlan = ["Daily", "Weekly"].includes(initialData.period);
+        const isTrialPlan =
+          isFreePrice(initialData.price) && isTrialPeriod(initialData.period);
         setIsTrial(isTrialPlan);
         form.reset({
           name: initialData.name,
           description: initialData.description || "",
-          price: initialData.price,
+          price: toAmount(initialData.price),
           period: initialData.period,
+          currency: initialData.currency || "USD",
+          setup_fee: toAmount(initialData.setup_fee),
+          billing_day_of_month: initialData.billing_day_of_month ?? null,
           status: initialData.status as MembershipFormValues["status"],
           features: initialData.features
             ? initialData.features.map((f: string) => ({ value: f }))
@@ -98,8 +130,11 @@ export function MembershipDialog({
         form.reset({
           name: "",
           description: "",
-          price: "",
-          period: "Monthly",
+          price: 0,
+          period: "monthly",
+          currency: "USD",
+          setup_fee: 0,
+          billing_day_of_month: null,
           status: "active",
           features: [],
         });
@@ -110,11 +145,11 @@ export function MembershipDialog({
   const handleTrialChange = (checked: boolean) => {
     setIsTrial(checked);
     if (checked) {
-      form.setValue("price", "0");
-      form.setValue("period", "Weekly");
+      form.setValue("price", 0);
+      form.setValue("period", "weekly");
     } else {
-      form.setValue("price", "");
-      form.setValue("period", "Monthly");
+      form.setValue("price", 0);
+      form.setValue("period", "monthly");
     }
   };
 
@@ -187,6 +222,9 @@ export function MembershipDialog({
                     <FormLabel>Price</FormLabel>
                     <FormControl>
                       <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
                         placeholder="e.g. 150.00"
                         {...field}
                         disabled={isTrial}
@@ -215,15 +253,15 @@ export function MembershipDialog({
                       <SelectContent>
                         {isTrial ? (
                           <>
-                            <SelectItem value="Daily">Daily</SelectItem>
-                            <SelectItem value="Weekly">Weekly</SelectItem>
+                            <SelectItem value="daily">Daily</SelectItem>
+                            <SelectItem value="weekly">Weekly</SelectItem>
                           </>
                         ) : (
                           <>
-                            <SelectItem value="Monthly">Monthly</SelectItem>
-                            <SelectItem value="Quarterly">Quarterly</SelectItem>
-                            <SelectItem value="Biannual">Biannual</SelectItem>
-                            <SelectItem value="Annual">Annual</SelectItem>
+                            <SelectItem value="monthly">Monthly</SelectItem>
+                            <SelectItem value="quarterly">Quarterly</SelectItem>
+                            <SelectItem value="biannual">Biannual</SelectItem>
+                            <SelectItem value="annual">Annual</SelectItem>
                           </>
                         )}
                       </SelectContent>
@@ -233,6 +271,76 @@ export function MembershipDialog({
                 )}
               />
             </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="currency"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Currency</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Currency" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {CURRENCIES.map((code) => (
+                          <SelectItem key={code} value={code}>
+                            {code}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="setup_fee"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Setup Fee</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder="e.g. 0.00"
+                        {...field}
+                        disabled={isTrial}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <FormField
+              control={form.control}
+              name="billing_day_of_month"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Billing Day of Month (optional)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="31"
+                      placeholder="e.g. 1"
+                      {...field}
+                      value={field.value ?? ""}
+                      disabled={isTrial}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}

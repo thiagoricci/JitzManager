@@ -232,10 +232,10 @@ serve(async (req) => {
         return new Response(`Database Error: Plan not found`, { status: 404 });
       }
 
-      // Check if this is a trial plan (free with Daily or Weekly period)
+      // Check if this is a trial plan (free with a daily or weekly period)
       const isTrialPlan =
-        (plan.price === "0" || plan.price === "0.00") &&
-        ["Daily", "Weekly"].includes(plan.period);
+        parseFloat(plan.price) === 0 &&
+        ["daily", "weekly"].includes((plan.period ?? "").toLowerCase());
 
       const { error } = await supabaseAdmin
         .from("students")

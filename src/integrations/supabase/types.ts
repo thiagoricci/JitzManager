@@ -65,33 +65,42 @@ export type Database = {
       }
       membership_plans: {
         Row: {
+          billing_day_of_month: number | null
+          currency: string
           description: string | null
           features: string[] | null
           id: number
           name: string
           organization_id: string | null
-          period: string
-          price: string
+          period: Database["public"]["Enums"]["billing_period"]
+          price: number
+          setup_fee: number
           status: string
         }
         Insert: {
+          billing_day_of_month?: number | null
+          currency?: string
           description?: string | null
           features?: string[] | null
           id?: number
           name: string
           organization_id?: string | null
-          period: string
-          price: string
+          period: Database["public"]["Enums"]["billing_period"]
+          price: number
+          setup_fee?: number
           status: string
         }
         Update: {
+          billing_day_of_month?: number | null
+          currency?: string
           description?: string | null
           features?: string[] | null
           id?: number
           name?: string
           organization_id?: string | null
-          period?: string
-          price?: string
+          period?: Database["public"]["Enums"]["billing_period"]
+          price?: number
+          setup_fee?: number
           status?: string
         }
         Relationships: [
@@ -409,7 +418,13 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      billing_period:
+        | "daily"
+        | "weekly"
+        | "monthly"
+        | "quarterly"
+        | "biannual"
+        | "annual"
     }
     CompositeTypes: {
       [_ in never]: never

@@ -32,7 +32,7 @@ serve(async (req: Request) => {
 
     const { data: plan, error } = await supabase
       .from("membership_plans")
-      .select("id, name, description, price, period, status, organization_id, organizations(name, stripe_account_id)")
+      .select("id, name, description, price, period, currency, status, organization_id, organizations(name, stripe_account_id)")
       .eq("id", planId)
       .single();
 
@@ -57,6 +57,7 @@ serve(async (req: Request) => {
         description: plan.description,
         price: plan.price,
         period: plan.period,
+        currency: plan.currency,
       },
     });
   } catch (error) {

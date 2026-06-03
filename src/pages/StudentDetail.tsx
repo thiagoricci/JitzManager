@@ -37,6 +37,7 @@ import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { formatDate, getWeekStartInTimezone } from "@/lib/date";
+import { formatMoney, formatPeriod, isFreePrice, isTrialPeriod } from "@/lib/money";
 import { useAuth } from "@/contexts/AuthContext";
 import StudentProfileCard from "@/components/StudentProfileCard";
 import PersonalInformationCard from "@/components/PersonalInformationCard";
@@ -506,7 +507,7 @@ export default function StudentDetail() {
       return;
     }
 
-    if (plan.price === "0" || plan.price === "0.00") {
+    if (isFreePrice(plan.price)) {
       activateFreebieMutation.mutate(selectedPlan);
     } else if (paymentMethodId) {
       chargeStudentMutation.mutate({ planId: selectedPlan, paymentMethodId, billingStartDate, discount });
@@ -523,10 +524,8 @@ export default function StudentDetail() {
         throw new Error("Plan not found");
       }
       
-      // Check if this is a trial plan (free with Daily or Weekly period)
-      const isTrialPlan = 
-        (plan.price === "0" || plan.price === "0.00") &&
-        ["Daily", "Weekly"].includes(plan.period);
+      // Check if this is a trial plan (free with a daily or weekly period)
+      const isTrialPlan = isFreePrice(plan.price) && isTrialPeriod(plan.period);
       
       const { error } = await supabase
         .from("students")
@@ -880,11 +879,11 @@ export default function StudentDetail() {
                   {student.membership_plans?.name || "No Plan"}
                 </span>
               </div>
-              {student.membership_plans?.price && (
+              {student.membership_plans?.price != null && (
                 <div className="flex justify-between py-2 border-b border-border">
                   <span className="text-muted-foreground">Amount</span>
                   <span className="font-medium text-foreground">
-                    ${student.membership_plans.price}/{student.membership_plans.period}
+                    {formatMoney(student.membership_plans.price)}/{formatPeriod(student.membership_plans.period)}
                   </span>
                 </div>
               )}

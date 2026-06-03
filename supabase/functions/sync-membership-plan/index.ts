@@ -9,13 +9,15 @@ const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") as string, {
 });
 
 function periodToRecurring(period: string): { interval: "day" | "week" | "month" | "year"; interval_count: number } {
-  switch (period) {
-    case "Daily":    return { interval: "day",   interval_count: 1 };
-    case "Weekly":   return { interval: "week",  interval_count: 1 };
-    case "Quarterly":return { interval: "month", interval_count: 3 };
-    case "Biannual": return { interval: "month", interval_count: 6 };
-    case "Annual":   return { interval: "year",  interval_count: 1 };
-    default:         return { interval: "month", interval_count: 1 }; // Monthly
+  // The billing_period enum is lowercase; lowercase here too so any legacy
+  // capitalized value still maps correctly.
+  switch ((period ?? "").toLowerCase()) {
+    case "daily":     return { interval: "day",   interval_count: 1 };
+    case "weekly":    return { interval: "week",  interval_count: 1 };
+    case "quarterly": return { interval: "month", interval_count: 3 };
+    case "biannual":  return { interval: "month", interval_count: 6 };
+    case "annual":    return { interval: "year",  interval_count: 1 };
+    default:          return { interval: "month", interval_count: 1 }; // monthly
   }
 }
 

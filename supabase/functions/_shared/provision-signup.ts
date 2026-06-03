@@ -38,8 +38,8 @@ export async function provisionSelfSignup(
   if (planError || !plan) throw new Error("Plan not found");
 
   const isTrialPlan =
-    (plan.price === "0" || plan.price === "0.00") &&
-    ["Daily", "Weekly"].includes(plan.period);
+    parseFloat(plan.price) === 0 &&
+    ["daily", "weekly"].includes((plan.period ?? "").toLowerCase());
 
   // Match an existing student by email within the org to avoid duplicates.
   let existing: { id: number; subscription_id: string | null } | null = null;

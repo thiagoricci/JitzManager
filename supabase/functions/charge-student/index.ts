@@ -227,10 +227,10 @@ serve(async (req: Request) => {
 
     if (subscription.status === "active" || subscription.status === "trialing" ||
         (paymentIntent && paymentIntent.status === "succeeded")) {
-      // Check if this is a trial plan (free with Daily or Weekly period)
-      const isTrialPlan = 
-        (plan.price === "0" || plan.price === "0.00") &&
-        ["Daily", "Weekly"].includes(plan.period);
+      // Check if this is a trial plan (free with a daily or weekly period)
+      const isTrialPlan =
+        parseFloat(plan.price) === 0 &&
+        ["daily", "weekly"].includes((plan.period ?? "").toLowerCase());
       
       // Update student status and save subscription/billing info
       const studentUpdates: Record<string, unknown> = {
