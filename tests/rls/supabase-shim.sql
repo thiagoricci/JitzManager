@@ -36,7 +36,7 @@ CREATE TABLE auth.users (
 CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid
 LANGUAGE sql STABLE AS $$
   SELECT NULLIF(
-    current_setting('request.jwt.claims', true)::jsonb ->> 'sub',
+    NULLIF(current_setting('request.jwt.claims', true), '')::jsonb ->> 'sub',
     ''
   )::uuid;
 $$;
@@ -48,7 +48,7 @@ $$;
 
 CREATE OR REPLACE FUNCTION auth.role() RETURNS text
 LANGUAGE sql STABLE AS $$
-  SELECT current_setting('request.jwt.claims', true)::jsonb ->> 'role';
+  SELECT NULLIF(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role';
 $$;
 
 -- Minimal storage objects referenced by the logos-bucket migration.

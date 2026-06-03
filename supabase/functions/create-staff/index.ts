@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.86.0";
 import { corsHeaders } from "../_shared/cors.ts";
+import { recordAudit } from "../_shared/audit.ts";
 
 const ADMIN_ROLES = ["owner", "admin"];
 
@@ -110,6 +111,17 @@ serve(async (req: Request) => {
       await supabaseAdmin.auth.admin.deleteUser(newUserId);
       throw insertError;
     }
+
+    await recordAudit(supabaseAdmin, {
+      organizationId,
+      actorId: user.id,
+      actorEmail: user.email,
+      action: "staff.created",
+      entityType: "staff",
+      entityId: newUserId,
+      summary: `Added staff member ${full_name ?? email}`,
+      details: { email, full_name: full_name ?? null, role: "staff" },
+    });
 
     return new Response(JSON.stringify({ success: true, userId: newUserId }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

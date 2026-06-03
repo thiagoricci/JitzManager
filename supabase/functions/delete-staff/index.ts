@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.86.0";
 import { corsHeaders } from "../_shared/cors.ts";
+import { recordAudit } from "../_shared/audit.ts";
 
 const ADMIN_ROLES = ["owner", "admin"];
 
@@ -75,7 +76,7 @@ serve(async (req: Request) => {
     // Only allow removing a staff member that belongs to the caller's org.
     const { data: targetProfile, error: targetError } = await supabaseAdmin
       .from("profiles")
-      .select("organization_id, role")
+      .select("organization_id, role, full_name, email")
       .eq("id", userId)
       .single();
 
@@ -99,6 +100,17 @@ serve(async (req: Request) => {
     // Deleting the auth user cascades to the profile row (profiles.id FK).
     const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
     if (deleteError) throw deleteError;
+
+    await recordAudit(supabaseAdmin, {
+      organizationId: callerProfile.organization_id,
+      actorId: user.id,
+      actorEmail: user.email,
+      action: "staff.deleted",
+      entityType: "staff",
+      entityId: userId,
+      summary: `Removed staff member ${targetProfile.full_name ?? targetProfile.email ?? userId}`,
+      details: { email: targetProfile.email ?? null, full_name: targetProfile.full_name ?? null },
+    });
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

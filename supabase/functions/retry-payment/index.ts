@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.86.0";
 import Stripe from "https://esm.sh/stripe@12.3.0";
 import { corsHeaders } from "../_shared/cors.ts";
+import { recordAudit } from "../_shared/audit.ts";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") as string, {
   apiVersion: "2023-10-16",
@@ -195,6 +196,21 @@ serve(async (req: Request) => {
         membership_status: "active",
         status: "student",
       }).eq("id", payment.student_id);
+
+      await recordAudit(supabase, {
+        organizationId: payment.organization_id,
+        actorId: user.id,
+        actorEmail: user.email,
+        action: "payment.retried",
+        entityType: "payment",
+        entityId: payment.id,
+        summary: `Retried payment #${payment.id} for ${student.name ?? "student"} ($${Number(payment.amount).toFixed(2)})`,
+        details: {
+          amount: Number(payment.amount),
+          student_id: payment.student_id,
+          retry_count: payment.retry_count + 1,
+        },
+      });
 
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -70,6 +70,10 @@ All Stripe operations go through **Supabase Edge Functions** (Deno runtime) in `
 
 The `stripe-webhook` edge function handles all Stripe webhook events using signature verification.
 
+### Audit Log
+
+The `audit_log` table records who changed what for sensitive entities, shown by an admin-only viewer (`AuditLogCard`) in Settings. Recording is hybrid: a DB trigger on `students` captures client-side edits (incl. belt/rank) with `actor = auth.uid()`, while service-role edge functions (`refund-payment`, `retry-payment`, `charge-student`, `create-staff`, `delete-staff`) — where `auth.uid()` is NULL — log explicitly via the `recordAudit` helper in `supabase/functions/_shared/audit.ts`. The log is append-only (no INSERT/UPDATE/DELETE RLS policies; writers bypass RLS) and SELECT is scoped to org owners/admins via the `is_org_admin()` SECURITY DEFINER helper.
+
 ### Date/Timezone Handling
 
 All date display is timezone-aware. The organization's `timezone` field drives all date formatting. Use utilities from `src/lib/date.ts` (`formatDate`, `getTodayInTimezone`, `getDayOfWeekInTimezone`) rather than raw `date-fns` functions. Plain `YYYY-MM-DD` strings (join dates, birth dates) are parsed as local calendar dates to avoid timezone shifts.
