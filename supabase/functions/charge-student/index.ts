@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.86.0";
 import Stripe from "https://esm.sh/stripe@12.3.0";
 import { corsHeaders } from "../_shared/cors.ts";
 import { upsertStripeCustomer } from "../_shared/stripe-customer.ts";
+import { recordAudit } from "../_shared/audit.ts";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") as string, {
   apiVersion: "2023-10-16",
@@ -283,6 +284,25 @@ serve(async (req: Request) => {
         }
       } else {
         console.error(`Student ${studentId} has no organization_id, skipping payment record.`);
+      }
+
+      if (student.organization_id) {
+        await recordAudit(supabase, {
+          organizationId: student.organization_id,
+          actorId: user.id,
+          actorEmail: user.email,
+          action: isScheduled ? "payment.scheduled" : "payment.charged",
+          entityType: "student",
+          entityId: studentId,
+          summary: `${isScheduled ? "Scheduled charge for" : "Charged"} ${student.name ?? "student"}: ${plan.name} ($${(isScheduled ? planPrice : chargedNow).toFixed(2)})`,
+          details: {
+            plan_id: parseInt(planId),
+            plan_name: plan.name,
+            amount: isScheduled ? planPrice : chargedNow,
+            subscription_id: subscription.id,
+            subscription_status: subscription.status,
+          },
+        });
       }
 
       return new Response(JSON.stringify({

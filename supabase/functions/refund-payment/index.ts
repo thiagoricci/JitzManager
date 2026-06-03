@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.86.0";
 import Stripe from "https://esm.sh/stripe@12.3.0";
 import { corsHeaders } from "../_shared/cors.ts";
+import { recordAudit } from "../_shared/audit.ts";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") as string, {
   apiVersion: "2023-10-16",
@@ -185,6 +186,25 @@ serve(async (req: Request) => {
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    await recordAudit(supabase, {
+      organizationId: payment.organization_id,
+      actorId: user.id,
+      actorEmail: user.email,
+      action: fullyRefunded ? "payment.refunded" : "payment.partially_refunded",
+      entityType: "payment",
+      entityId: payment.id,
+      summary: `Refunded $${refundDollars.toFixed(2)} on payment #${payment.id}`,
+      details: {
+        refunded_amount: refundDollars,
+        total_refunded: newRefundedTotal,
+        payment_amount: totalAmount,
+        status: fullyRefunded ? "refunded" : "partially_refunded",
+        reason_code: reasonCode ?? null,
+        reason_note: reasonNote ?? null,
+        stripe_refund_id: refund.id,
+      },
+    });
 
     return new Response(
       JSON.stringify({
