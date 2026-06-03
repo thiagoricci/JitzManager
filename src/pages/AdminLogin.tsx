@@ -25,7 +25,10 @@ const AdminLogin = () => {
 
       if (error) throw error;
 
-      if (data.user?.email?.toLowerCase() !== "thiago@reivien.com") {
+      const { data: isAdmin, error: adminError } = await supabase.rpc("is_platform_admin");
+      if (adminError) throw adminError;
+
+      if (!isAdmin) {
         console.error("Unauthorized access attempt:", data.user?.email);
         await supabase.auth.signOut();
         toast.error("Unauthorized access");

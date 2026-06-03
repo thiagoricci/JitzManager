@@ -15,5 +15,8 @@ export default defineConfig({
     // The RLS suite spins up real SQL against Postgres; give it room.
     testTimeout: 30_000,
     hookTimeout: 60_000,
+    // RLS test files each DROP/recreate the schema against one shared Postgres,
+    // so they must not run concurrently. Cheap for the small unit suite too.
+    fileParallelism: false,
   },
 });

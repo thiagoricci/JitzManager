@@ -31,7 +31,12 @@ const AdminDashboard = () => {
 
   const checkAuth = async () => {
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session || session.user.email?.toLowerCase() !== "thiago@reivien.com") {
+    if (!session) {
+      navigate("/admin/login");
+      return;
+    }
+    const { data: isAdmin, error } = await supabase.rpc("is_platform_admin");
+    if (error || !isAdmin) {
       navigate("/admin/login");
     }
   };

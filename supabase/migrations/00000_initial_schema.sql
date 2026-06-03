@@ -124,6 +124,33 @@ CREATE TABLE public.platform_subscriptions (
 
 ALTER TABLE public.platform_subscriptions ENABLE ROW LEVEL SECURITY;
 
+-- 9. Platform Admins (role table; membership grants cross-tenant /admin access)
+CREATE TABLE public.platform_admins (
+  user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE public.platform_admins ENABLE ROW LEVEL SECURITY;
+
+-- ============================================
+-- Functions
+-- ============================================
+
+-- Whether the current user is a platform admin. SECURITY DEFINER so it reads
+-- platform_admins regardless of the caller's RLS; callable via
+-- supabase.rpc('is_platform_admin').
+CREATE OR REPLACE FUNCTION public.is_platform_admin()
+RETURNS BOOLEAN
+LANGUAGE SQL
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.platform_admins WHERE user_id = auth.uid()
+  );
+$$;
+
 -- ============================================
 -- RLS Policies
 -- ============================================
@@ -147,12 +174,10 @@ USING (
   )
 );
 
-CREATE POLICY "Admin can view all organizations"
+CREATE POLICY "Platform admins can view all organizations"
 ON public.organizations FOR SELECT
 TO authenticated
-USING (
-  lower(auth.jwt() ->> 'email') = 'thiago@reivien.com'
-);
+USING (public.is_platform_admin());
 
 -- Profiles
 CREATE POLICY "Users can view own profile"
@@ -349,9 +374,13 @@ USING (
   )
 );
 
-CREATE POLICY "Admin can view all platform subscriptions"
+CREATE POLICY "Platform admins can view all platform subscriptions"
 ON public.platform_subscriptions FOR SELECT
 TO authenticated
-USING (
-  lower(auth.jwt() ->> 'email') = 'thiago@reivien.com'
-);
+USING (public.is_platform_admin());
+
+-- Platform Admins (a user may read only their own row, to gate /admin)
+CREATE POLICY "Users can check their own platform admin status"
+ON public.platform_admins FOR SELECT
+TO authenticated
+USING (user_id = auth.uid());
