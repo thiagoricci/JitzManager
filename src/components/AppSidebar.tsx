@@ -14,16 +14,19 @@ import {
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 
-const mainItems = [
-  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Students", url: "/students", icon: Users },
-  { title: "Memberships", url: "/memberships", icon: CreditCard },
-  { title: "Attendance", url: "/attendance", icon: CalendarCheck },
-  { title: "Schedule", url: "/schedule", icon: Calendar },
-];
-
 export function AppSidebar() {
-  const { organization, isAdmin } = useAuth();
+  const { organization, isAdmin, can } = useAuth();
+
+  const mainItems = [
+    { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+    { title: "Students", url: "/students", icon: Users },
+    // Memberships is billing config — only roles that manage billing see it.
+    ...(can("manage_billing")
+      ? [{ title: "Memberships", url: "/memberships", icon: CreditCard }]
+      : []),
+    { title: "Attendance", url: "/attendance", icon: CalendarCheck },
+    { title: "Schedule", url: "/schedule", icon: Calendar },
+  ];
 
   const secondaryItems = [
     { title: "Profile", url: "/profile", icon: User },

@@ -39,9 +39,17 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
+import { ASSIGNABLE_ROLES, ROLE_LABELS, roleLabel } from "@/lib/permissions";
 import { toast } from "sonner";
 
 type StaffMember = {
@@ -55,6 +63,7 @@ const staffSchema = z.object({
   full_name: z.string().min(1, "Name is required"),
   email: z.string().email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
+  role: z.enum(["admin", "coach", "front_desk"]),
 });
 
 type StaffFormValues = z.infer<typeof staffSchema>;
@@ -72,15 +81,16 @@ async function extractInvokeError(error: unknown, fallback: string): Promise<str
 }
 
 export default function StaffManagementCard() {
-  const { organization, session } = useAuth();
+  const { organization, session, user } = useAuth();
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [updatingRoleId, setUpdatingRoleId] = useState<string | null>(null);
 
   const form = useForm<StaffFormValues>({
     resolver: zodResolver(staffSchema),
-    defaultValues: { full_name: "", email: "", password: "" },
+    defaultValues: { full_name: "", email: "", password: "", role: "coach" },
   });
 
   const { data: staff = [], isLoading } = useQuery({
@@ -91,11 +101,36 @@ export default function StaffManagementCard() {
         .from("profiles")
         .select("id, full_name, email, role")
         .eq("organization_id", organization!.id)
-        .eq("role", "staff");
+        .neq("role", "owner")
+        .neq("id", user?.id ?? "")
+        .order("full_name", { nullsFirst: false });
       if (error) throw error;
       return data ?? [];
     },
   });
+
+  const onChangeRole = async (userId: string, role: string) => {
+    if (!session?.access_token) {
+      toast.error("Not authenticated");
+      return;
+    }
+    setUpdatingRoleId(userId);
+    try {
+      const { data, error } = await supabase.functions.invoke("update-staff-role", {
+        body: { userId, role },
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (error) throw new Error(await extractInvokeError(error, "Failed to update role"));
+      if (data?.error) throw new Error(data.error);
+
+      await queryClient.invalidateQueries({ queryKey: ["staff", organization?.id] });
+      toast.success("Role updated");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update role");
+    } finally {
+      setUpdatingRoleId(null);
+    }
+  };
 
   const onAddStaff = async (values: StaffFormValues) => {
     if (!session?.access_token) {
@@ -151,8 +186,9 @@ export default function StaffManagementCard() {
         <div>
           <CardTitle>Staff Members</CardTitle>
           <CardDescription>
-            Staff can access everything except this Settings page. They manage their own
-            account from their Profile page.
+            Each member's role controls what they can do. Admins have full access;
+            front desk manages students and attendance; coaches record attendance and
+            promote ranks. Members manage their own login from their Profile page.
           </CardDescription>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -209,6 +245,30 @@ export default function StaffManagementCard() {
                     </FormItem>
                   )}
                 />
+                <FormField
+                  control={form.control}
+                  name="role"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Role</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a role" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {ASSIGNABLE_ROLES.map((r) => (
+                            <SelectItem key={r} value={r}>
+                              {ROLE_LABELS[r]}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <DialogFooter>
                   <Button type="submit" disabled={submitting}>
                     {submitting ? (
@@ -246,6 +306,23 @@ export default function StaffManagementCard() {
                   </p>
                   <p className="truncate text-sm text-muted-foreground">{member.email}</p>
                 </div>
+                <div className="flex items-center gap-2">
+                  <Select
+                    value={member.role}
+                    onValueChange={(value) => onChangeRole(member.id, value)}
+                    disabled={updatingRoleId === member.id}
+                  >
+                    <SelectTrigger className="h-8 w-[130px]">
+                      <SelectValue placeholder={roleLabel(member.role)} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ASSIGNABLE_ROLES.map((r) => (
+                        <SelectItem key={r} value={r}>
+                          {ROLE_LABELS[r]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button
@@ -280,6 +357,7 @@ export default function StaffManagementCard() {
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
+                </div>
               </div>
             ))}
           </div>

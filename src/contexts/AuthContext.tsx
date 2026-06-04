@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
+import { ADMIN_ROLES, hasPermission, isRole, Permission, Role } from "@/lib/permissions";
 
 type Profile = {
   id: string;
@@ -9,8 +10,6 @@ type Profile = {
   full_name: string | null;
   email: string | null;
 };
-
-const ADMIN_ROLES = ["owner", "admin"];
 
 type Organization = {
   id: string;
@@ -29,7 +28,9 @@ type AuthContextType = {
   user: User | null;
   profile: Profile | null;
   organization: Organization | null;
+  role: Role | null;
   isAdmin: boolean;
+  can: (permission: Permission) => boolean;
   loading: boolean;
   signOut: () => Promise<void>;
   refreshProfile: (silent?: boolean) => Promise<void>;
@@ -149,10 +150,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [organization?.logo_url]);
 
-  const isAdmin = !!profile && ADMIN_ROLES.includes(profile.role);
+  const role = isRole(profile?.role) ? profile!.role : null;
+  const isAdmin = !!role && ADMIN_ROLES.includes(role);
+  const can = (permission: Permission) => hasPermission(role, permission);
 
   return (
-    <AuthContext.Provider value={{ session, user, profile, organization, isAdmin, loading, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ session, user, profile, organization, role, isAdmin, can, loading, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

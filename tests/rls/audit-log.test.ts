@@ -17,7 +17,7 @@ const shimPath = join(here, "supabase-shim.sql");
 const ORG_A = "11111111-1111-1111-1111-111111111111";
 const ORG_B = "22222222-2222-2222-2222-222222222222";
 const OWNER_A = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"; // owner of org A
-const STAFF_A = "cccccccc-cccc-cccc-cccc-cccccccccccc"; // staff of org A (non-admin)
+const STAFF_A = "cccccccc-cccc-cccc-cccc-cccccccccccc"; // coach of org A (non-admin)
 const OWNER_B = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"; // owner of org B
 
 function jwt(sub: string) {
@@ -53,7 +53,7 @@ describeIfDb("RLS: audit log", () => {
     );
     await client.query(
       `INSERT INTO public.profiles (id, organization_id, role) VALUES
-         ($1, $2, 'owner'), ($3, $2, 'staff'), ($4, $5, 'owner')`,
+         ($1, $2, 'owner'), ($3, $2, 'coach'), ($4, $5, 'owner')`,
       [OWNER_A, ORG_A, STAFF_A, OWNER_B, ORG_B]
     );
     const { rows } = await client.query(
@@ -135,7 +135,7 @@ describeIfDb("RLS: audit log", () => {
     expect(rowsA.length).toBeGreaterThan(0);
   });
 
-  it("denies a non-admin (staff) member from reading the audit log", async () => {
+  it("denies a non-admin (coach) member from reading the audit log", async () => {
     const rows = await asUser(
       STAFF_A,
       `SELECT id FROM public.audit_log WHERE organization_id = $1`,

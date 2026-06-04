@@ -251,6 +251,7 @@ jitz-manager/
 │   │   ├── sign-waiver/
 │   │   ├── stripe-webhook/
 │   │   ├── sync-membership-plan/
+│   │   ├── update-staff-role/
 │   │   └── verify-payment-and-update-student/
 │   ├── migrations/              # Database migrations
 │   └── config.toml              # Supabase configuration
@@ -371,8 +372,9 @@ The application uses Supabase Edge Functions for secure Stripe operations:
 - **`verify-payment-and-update-student`**: Verifies payment and updates student status
 - **`complete-signup`**: Completes user signup process
 - **`complete-signup-enrollment`**: Completes signup for self-enrolled students
-- **`create-staff`**: Creates staff member accounts
+- **`create-staff`**: Creates staff member accounts with a role (admin/coach/front_desk)
 - **`delete-staff`**: Removes staff member access
+- **`update-staff-role`**: Changes a staff member's role
 - **`get-enrollment-details`**: Retrieves enrollment details for a signup link
 - **`get-waiver`**: Retrieves waiver details
 - **`sign-waiver`**: Records a signed digital waiver

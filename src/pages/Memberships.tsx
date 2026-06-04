@@ -27,7 +27,8 @@ import { formatMoney, formatPeriod, formatPrice, isFreePrice, toAmount } from "@
 
 export default function Memberships() {
   const queryClient = useQueryClient();
-  const { profile, organization, session } = useAuth();
+  const { profile, organization, session, can } = useAuth();
+  const canManageBilling = can("manage_billing");
   const navigate = useNavigate();
 
   const syncToStripe = (planId: number, action: "create" | "update" | "delete") => {
@@ -215,10 +216,12 @@ export default function Memberships() {
           <h2 className="text-3xl font-bold tracking-tight text-foreground">Memberships</h2>
           <p className="text-muted-foreground">Manage membership plans and pricing</p>
         </div>
-        <Button onClick={handleAddPlan}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Plan
-        </Button>
+        {canManageBilling && (
+          <Button onClick={handleAddPlan}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Plan
+          </Button>
+        )}
       </div>
 
       {/* Stats Overview */}
@@ -327,30 +330,32 @@ export default function Memberships() {
                     Copy Sign-up Link
                   </Button>
                 )}
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    className="flex-1"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleEditPlan(plan);
-                    }}
-                  >
-                    <Pencil className="h-4 w-4 mr-2" />
-                    Edit
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="flex-1 text-destructive hover:text-destructive"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeletePlan(plan);
-                    }}
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Delete
-                  </Button>
-                </div>
+                {canManageBilling && (
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEditPlan(plan);
+                      }}
+                    >
+                      <Pencil className="h-4 w-4 mr-2" />
+                      Edit
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="flex-1 text-destructive hover:text-destructive"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeletePlan(plan);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete
+                    </Button>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

@@ -51,7 +51,9 @@ import WaiverSignForm from "@/components/WaiverSignForm";
 export default function StudentDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { organization } = useAuth();
+  const { organization, can } = useAuth();
+  const canManageStudents = can("manage_students");
+  const canPromote = can("promote_ranks");
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -796,7 +798,7 @@ export default function StudentDetail() {
                         updateStatusMutation.mutate(value);
                       }
                     }}
-                    disabled={updateStatusMutation.isPending}
+                    disabled={updateStatusMutation.isPending || !canManageStudents}
                   >
                     <SelectTrigger className={bgClass}>
                       <SelectValue />
@@ -859,6 +861,7 @@ export default function StudentDetail() {
             totalClasses={totalClasses || 0}
             classesThisWeek={attendanceHistory?.length || 0}
             onUpdate={updateProgressionMutation.mutateAsync}
+            canEdit={canPromote}
           />
         </div>
         <div className="lg:col-span-2 flex flex-col gap-6">
@@ -868,9 +871,11 @@ export default function StudentDetail() {
                 <Award className="h-5 w-5 text-primary" />
                 Membership Info
               </CardTitle>
-              <Button variant="ghost" size="icon" onClick={() => setIsDialogOpen(true)}>
-                <Edit className="h-4 w-4" />
-              </Button>
+              {canManageStudents && (
+                <Button variant="ghost" size="icon" onClick={() => setIsDialogOpen(true)}>
+                  <Edit className="h-4 w-4" />
+                </Button>
+              )}
             </CardHeader>
             <CardContent className="space-y-0 pt-4">
               <div className="flex justify-between py-2 border-b border-border">

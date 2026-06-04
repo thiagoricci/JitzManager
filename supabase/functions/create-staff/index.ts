@@ -4,6 +4,9 @@ import { corsHeaders } from "../_shared/cors.ts";
 import { recordAudit } from "../_shared/audit.ts";
 
 const ADMIN_ROLES = ["owner", "admin"];
+// Roles an admin/owner may assign when creating staff. 'owner' is set at org
+// creation/transfer and is intentionally not assignable here.
+const ASSIGNABLE_ROLES = ["admin", "coach", "front_desk"];
 
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -67,10 +70,19 @@ serve(async (req: Request) => {
 
     const organizationId = callerProfile.organization_id;
 
-    const { full_name, email, password } = await req.json();
+    const { full_name, email, password, role } = await req.json();
 
     if (!email || !password) {
       return new Response(JSON.stringify({ error: "Email and password are required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Default new staff to the least-privileged role; validate any explicit choice.
+    const newRole = role ?? "coach";
+    if (!ASSIGNABLE_ROLES.includes(newRole)) {
+      return new Response(JSON.stringify({ error: "Invalid role" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -82,7 +94,7 @@ serve(async (req: Request) => {
         email,
         password,
         email_confirm: true,
-        app_metadata: { organization_id: organizationId, role: "staff" },
+        app_metadata: { organization_id: organizationId, role: newRole },
       });
 
     if (createError) {
@@ -101,7 +113,7 @@ serve(async (req: Request) => {
     const { error: insertError } = await supabaseAdmin.from("profiles").upsert({
       id: newUserId,
       organization_id: organizationId,
-      role: "staff",
+      role: newRole,
       full_name: full_name ?? null,
       email,
     });
@@ -119,8 +131,8 @@ serve(async (req: Request) => {
       action: "staff.created",
       entityType: "staff",
       entityId: newUserId,
-      summary: `Added staff member ${full_name ?? email}`,
-      details: { email, full_name: full_name ?? null, role: "staff" },
+      summary: `Added staff member ${full_name ?? email} (${newRole})`,
+      details: { email, full_name: full_name ?? null, role: newRole },
     });
 
     return new Response(JSON.stringify({ success: true, userId: newUserId }), {

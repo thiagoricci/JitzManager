@@ -43,6 +43,8 @@ interface StudentProfileCardProps {
   totalClasses: number;
   classesThisWeek: number;
   onUpdate: (updates: { belt: BeltRank; stripes: number }) => Promise<void>;
+  // Whether the current user may change the student's rank (belt/stripes).
+  canEdit?: boolean;
 }
 
 export default function StudentProfileCard({
@@ -50,6 +52,7 @@ export default function StudentProfileCard({
   totalClasses,
   classesThisWeek,
   onUpdate,
+  canEdit = true,
 }: StudentProfileCardProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedBelt, setSelectedBelt] = useState<BeltRank>(student.belt);
@@ -81,6 +84,7 @@ export default function StudentProfileCard({
             <BarChart className="h-5 w-5 text-primary" />
             Progression
           </CardTitle>
+          {canEdit && (
           <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
             <DialogTrigger asChild>
               <Button variant="ghost" size="icon">
@@ -155,6 +159,7 @@ export default function StudentProfileCard({
               </DialogFooter>
             </DialogContent>
           </Dialog>
+          )}
         </div>
       </CardHeader>
       <CardContent className="space-y-4 pt-4">

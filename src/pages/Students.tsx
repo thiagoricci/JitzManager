@@ -55,7 +55,7 @@ import {
 import ImportStudentsDialog, { StudentImportData } from "@/components/ImportStudentsDialog";
 
 export default function Students() {
-  const { organization } = useAuth();
+  const { organization, can } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [studentToDelete, setStudentToDelete] = useState<string | null>(null);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
@@ -201,10 +201,12 @@ export default function Students() {
               className="pl-10"
             />
           </div>
-          <Button variant="outline" onClick={() => setIsImportDialogOpen(true)}>
-            <Upload className="mr-2 h-4 w-4" />
-            Import
-          </Button>
+          {can("manage_students") && (
+            <Button variant="outline" onClick={() => setIsImportDialogOpen(true)}>
+              <Upload className="mr-2 h-4 w-4" />
+              Import
+            </Button>
+          )}
         </div>
       </div>
 
@@ -315,19 +317,23 @@ export default function Students() {
                       <DropdownMenuItem onClick={() => navigate(`/student/${student.id}`)}>
                         View details
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate(`/student/${student.id}/edit`)}>
-                        Edit student
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        className="text-destructive"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setStudentToDelete(student.id);
-                        }}
-                      >
-                        Delete student
-                      </DropdownMenuItem>
+                      {can("manage_students") && (
+                        <>
+                          <DropdownMenuItem onClick={() => navigate(`/student/${student.id}/edit`)}>
+                            Edit student
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="text-destructive"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setStudentToDelete(student.id);
+                            }}
+                          >
+                            Delete student
+                          </DropdownMenuItem>
+                        </>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>

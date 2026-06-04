@@ -12,10 +12,12 @@ import {
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
+  const { can, isAdmin } = useAuth();
 
   const handleSignOut = async () => {
     try {
@@ -39,12 +41,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <SidebarTrigger />
               </div>
               <div className="flex items-center gap-4">
-                <Link to="/add-student">
-                  <Button size="sm">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Student
-                  </Button>
-                </Link>
+                {can("manage_students") && (
+                  <Link to="/add-student">
+                    <Button size="sm">
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Student
+                    </Button>
+                  </Link>
+                )}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon">
@@ -54,10 +58,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   <DropdownMenuContent align="end">
                     <DropdownMenuLabel>My Account</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => navigate("/settings")}>
-                      Settings
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
+                    {isAdmin && (
+                      <>
+                        <DropdownMenuItem onClick={() => navigate("/settings")}>
+                          Settings
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                      </>
+                    )}
                     <DropdownMenuItem onClick={handleSignOut}>
                       <LogOut className="mr-2 h-4 w-4" />
                       <span>Sign Out</span>

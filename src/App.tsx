@@ -69,10 +69,10 @@ const App = () => (
                 <Route path="/dashboard" element={<Index />} />
                 <Route path="/students" element={<Students />} />
                 <Route path="/student/:id" element={<StudentDetail />} />
-                <Route path="/add-student" element={<AddStudent />} />
-                <Route path="/student/:id/edit" element={<EditStudent />} />
-                <Route path="/memberships" element={<Memberships />} />
-                <Route path="/membership/:id" element={<MembershipDetail />} />
+                <Route path="/add-student" element={<ProtectedRoute permission="manage_students"><AddStudent /></ProtectedRoute>} />
+                <Route path="/student/:id/edit" element={<ProtectedRoute permission="manage_students"><EditStudent /></ProtectedRoute>} />
+                <Route path="/memberships" element={<ProtectedRoute permission="manage_billing"><Memberships /></ProtectedRoute>} />
+                <Route path="/membership/:id" element={<ProtectedRoute permission="manage_billing"><MembershipDetail /></ProtectedRoute>} />
                 <Route path="/attendance" element={<Attendance />} />
                 <Route path="/schedule" element={<Schedule />} />
                 <Route path="/settings" element={<ProtectedRoute requireAdmin><Settings /></ProtectedRoute>} />
