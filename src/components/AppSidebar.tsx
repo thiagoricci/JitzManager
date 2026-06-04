@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, CreditCard, CalendarCheck, Calendar, Settings, HelpCircle, User } from "lucide-react";
+import { LayoutDashboard, Users, CreditCard, AlertCircle, CalendarCheck, Calendar, Settings, HelpCircle, User } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -20,9 +20,12 @@ export function AppSidebar() {
   const mainItems = [
     { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
     { title: "Students", url: "/students", icon: Users },
-    // Memberships is billing config — only roles that manage billing see it.
+    // Memberships & Past Due are billing — only roles that manage billing see them.
     ...(can("manage_billing")
-      ? [{ title: "Memberships", url: "/memberships", icon: CreditCard }]
+      ? [
+          { title: "Memberships", url: "/memberships", icon: CreditCard },
+          { title: "Past Due", url: "/past-due", icon: AlertCircle },
+        ]
       : []),
     { title: "Attendance", url: "/attendance", icon: CalendarCheck },
     { title: "Schedule", url: "/schedule", icon: Calendar },

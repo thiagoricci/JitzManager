@@ -12,6 +12,7 @@ import AddStudent from "./pages/AddStudent";
 import EditStudent from "./pages/EditStudent";
 import Memberships from "./pages/Memberships";
 import MembershipDetail from "./pages/MembershipDetail";
+import PastDue from "./pages/PastDue";
 import Attendance from "./pages/Attendance";
 import Schedule from "./pages/Schedule";
 import Settings from "./pages/Settings";
@@ -73,6 +74,7 @@ const App = () => (
                 <Route path="/student/:id/edit" element={<ProtectedRoute permission="manage_students"><EditStudent /></ProtectedRoute>} />
                 <Route path="/memberships" element={<ProtectedRoute permission="manage_billing"><Memberships /></ProtectedRoute>} />
                 <Route path="/membership/:id" element={<ProtectedRoute permission="manage_billing"><MembershipDetail /></ProtectedRoute>} />
+                <Route path="/past-due" element={<ProtectedRoute permission="manage_billing"><PastDue /></ProtectedRoute>} />
                 <Route path="/attendance" element={<Attendance />} />
                 <Route path="/schedule" element={<Schedule />} />
                 <Route path="/settings" element={<ProtectedRoute requireAdmin><Settings /></ProtectedRoute>} />
