@@ -84,6 +84,12 @@ The `stripe-webhook` edge function handles all Stripe webhook events using signa
 
 The `audit_log` table records who changed what for sensitive entities, shown by an admin-only viewer (`AuditLogCard`) in Settings. Recording is hybrid: a DB trigger on `students` captures client-side edits (incl. belt/rank) with `actor = auth.uid()`, while service-role edge functions (`refund-payment`, `retry-payment`, `charge-student`, `create-staff`, `delete-staff`, `update-staff-role`) — where `auth.uid()` is NULL — log explicitly via the `recordAudit` helper in `supabase/functions/_shared/audit.ts`. The log is append-only (no INSERT/UPDATE/DELETE RLS policies; writers bypass RLS) and SELECT is scoped to org owners/admins via the `is_org_admin()` SECURITY DEFINER helper.
 
+### Automated Dunning & Scheduled Jobs
+
+Failed membership payments are recovered automatically. The **scheduled-jobs substrate** is pg_cron → edge function: a daily `cron.schedule` job (migration `20260605000001_dunning_cron.sql`, guarded so it no-ops on the RLS test Postgres) uses `pg_net` to POST to the `process-dunning` edge function (`verify_jwt = false`; it authorizes callers by checking the service-role key). Future automations should follow the same pattern.
+
+`process-dunning` materializes a retry schedule per failed payment into the `dunning_attempts` ledger (config in `organizations.dunning_retry_days`, default days 1/3/5/7 after first failure), then runs at most one due attempt per payment per day, charging via the shared `attemptCharge` helper (`supabase/functions/_shared/charge.ts`, also used by manual `retry-payment`). On failure it emails the member via Resend (`supabase/functions/_shared/email.ts`; `RESEND_API_KEY` / `DUNNING_FROM_EMAIL` secrets, no-ops if unset) — a heads-up on each failure and a stronger notice before the final attempt. After the final failed attempt it freezes the membership (`membership_status='frozen'`, gated by `dunning_freeze_on_final`), which surfaces on the dashboard's Frozen Students list. Per-org settings live in `DunningSettingsCard` (Settings), the ledger is admin-readable/append-only like `audit_log`, and pure schedule math is in `_shared/dunning-schedule.ts` (unit-tested in `tests/dunning-schedule.test.ts`; RLS in `tests/rls/dunning.test.ts`). One-time deploy setup (Vault secrets for the cron call) is documented in the cron migration header.
+
 ### Date/Timezone Handling
 
 All date display is timezone-aware. The organization's `timezone` field drives all date formatting. Use utilities from `src/lib/date.ts` (`formatDate`, `getTodayInTimezone`, `getDayOfWeekInTimezone`) rather than raw `date-fns` functions. Plain `YYYY-MM-DD` strings (join dates, birth dates) are parsed as local calendar dates to avoid timezone shifts.
@@ -104,4 +110,4 @@ VITE_SUPABASE_ANON_KEY    # Supabase anon/public key
 VITE_STRIPE_PUBLISHABLE_KEY  # Stripe publishable key (optional for local dev)
 ```
 
-Edge functions read `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SIGNING_SECRET`, and `SUPABASE_SERVICE_ROLE_KEY` from Supabase's secrets store.
+Edge functions read `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SIGNING_SECRET`, and `SUPABASE_SERVICE_ROLE_KEY` from Supabase's secrets store. Automated dunning additionally uses `RESEND_API_KEY` and `DUNNING_FROM_EMAIL` for member emails (emails no-op if unset), plus the Vault secrets `project_url` / `service_role_key` for the pg_cron schedule (see the cron migration header).

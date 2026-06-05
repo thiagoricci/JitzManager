@@ -60,6 +60,30 @@ export default function PastDue() {
     },
   });
 
+  // Next scheduled automated-dunning attempt per failed payment, so the
+  // automation status is visible next to the manual retry action.
+  const { data: nextAttempts } = useQuery({
+    queryKey: ["dunning-next-attempts", organization?.id],
+    enabled: !!organization?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("dunning_attempts")
+        .select("payment_id, scheduled_for, is_final")
+        .eq("organization_id", organization!.id)
+        .eq("status", "pending")
+        .order("attempt_number", { ascending: true });
+      if (error) throw error;
+      // Keep the earliest pending attempt per payment.
+      const byPayment = new Map<number, { scheduled_for: string; is_final: boolean }>();
+      for (const a of data as { payment_id: number; scheduled_for: string; is_final: boolean }[]) {
+        if (!byPayment.has(a.payment_id)) {
+          byPayment.set(a.payment_id, { scheduled_for: a.scheduled_for, is_final: a.is_final });
+        }
+      }
+      return byPayment;
+    },
+  });
+
   const retryMutation = useMutation({
     mutationFn: async (payment: FailedPayment) => {
       if (!session?.access_token) throw new Error("Not authenticated");
@@ -138,6 +162,7 @@ export default function PastDue() {
                   <TableHead>Date</TableHead>
                   <TableHead>Failure Reason</TableHead>
                   <TableHead>Retries</TableHead>
+                  <TableHead>Next Retry</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -145,6 +170,7 @@ export default function PastDue() {
                 {payments.map((payment) => {
                   const exhausted = payment.retry_count >= MAX_RETRIES;
                   const isRetrying = retryingId === payment.id;
+                  const nextAttempt = nextAttempts?.get(payment.id);
                   return (
                     <TableRow key={payment.id} className="bg-red-50/40">
                       <TableCell>
@@ -178,6 +204,18 @@ export default function PastDue() {
                           <Badge variant="secondary">
                             {payment.retry_count} / {MAX_RETRIES}
                           </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {nextAttempt ? (
+                          <span className="text-sm">
+                            {formatDate(nextAttempt.scheduled_for, organization?.timezone)}
+                            {nextAttempt.is_final && (
+                              <span className="block text-xs text-destructive">final attempt</span>
+                            )}
+                          </span>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">—</span>
                         )}
                       </TableCell>
                       <TableCell className="text-right">

@@ -21,6 +21,9 @@ type Organization = {
   stripe_account_id: string | null;
   stripe_charges_enabled: boolean;
   waiver_text: string | null;
+  dunning_enabled: boolean;
+  dunning_retry_days: number[];
+  dunning_freeze_on_final: boolean;
 };
 
 type AuthContextType = {
@@ -97,7 +100,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const { data: orgData, error: orgError } = await supabase
             .from("organizations")
             .select(
-              "id, name, slug, logo_url, address, timezone, stripe_account_id, stripe_charges_enabled, waiver_text"
+              "id, name, slug, logo_url, address, timezone, stripe_account_id, stripe_charges_enabled, waiver_text, dunning_enabled, dunning_retry_days, dunning_freeze_on_final"
             )
             .eq("id", profileData.organization_id)
             .single();
