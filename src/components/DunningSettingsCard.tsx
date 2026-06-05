@@ -32,6 +32,7 @@ export default function DunningSettingsCard() {
   const [enabled, setEnabled] = useState(true);
   const [freezeOnFinal, setFreezeOnFinal] = useState(true);
   const [retryDays, setRetryDays] = useState("1, 3, 5, 7");
+  const [billingEmail, setBillingEmail] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -39,6 +40,7 @@ export default function DunningSettingsCard() {
       setEnabled(organization.dunning_enabled ?? true);
       setFreezeOnFinal(organization.dunning_freeze_on_final ?? true);
       setRetryDays((organization.dunning_retry_days ?? [1, 3, 5, 7]).join(", "));
+      setBillingEmail(organization.billing_email ?? "");
     }
   }, [organization]);
 
@@ -53,6 +55,11 @@ export default function DunningSettingsCard() {
       toast.error("Enter at least one positive retry day (e.g. 1, 3, 5, 7).");
       return;
     }
+    const trimmedEmail = billingEmail.trim();
+    if (trimmedEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      toast.error("Enter a valid billing email, or leave it blank.");
+      return;
+    }
     setSaving(true);
     const { error } = await supabase
       .from("organizations")
@@ -60,6 +67,7 @@ export default function DunningSettingsCard() {
         dunning_enabled: enabled,
         dunning_freeze_on_final: freezeOnFinal,
         dunning_retry_days: parsedDays,
+        billing_email: trimmedEmail || null,
       })
       .eq("id", organization.id);
     setSaving(false);
@@ -127,6 +135,22 @@ export default function DunningSettingsCard() {
             onCheckedChange={setFreezeOnFinal}
             disabled={!enabled}
           />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="billing-email">Billing reply-to email</Label>
+          <Input
+            id="billing-email"
+            type="email"
+            value={billingEmail}
+            onChange={(e) => setBillingEmail(e.target.value)}
+            placeholder="billing@youracademy.com"
+            disabled={!enabled}
+          />
+          <p className="text-sm text-muted-foreground">
+            Dunning emails show your academy's name and send replies here. Leave blank to use
+            the owner's account email.
+          </p>
         </div>
 
         <div className="flex justify-end">

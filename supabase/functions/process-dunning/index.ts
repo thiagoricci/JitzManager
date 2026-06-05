@@ -55,13 +55,21 @@ serve(async (req: Request) => {
   try {
     const { data: orgs, error: orgsError } = await supabase
       .from("organizations")
-      .select("id, name, stripe_account_id, dunning_retry_days, dunning_freeze_on_final")
+      .select("id, name, owner_id, billing_email, stripe_account_id, dunning_retry_days, dunning_freeze_on_final")
       .eq("dunning_enabled", true);
     if (orgsError) throw orgsError;
 
     for (const org of orgs ?? []) {
       if (!org.stripe_account_id) continue; // can't charge without a connected account
       summary.orgs++;
+
+      // Replies to dunning emails should reach the gym: prefer its configured
+      // billing email, else fall back to the org owner's account email.
+      let replyTo: string | undefined = org.billing_email ?? undefined;
+      if (!replyTo && org.owner_id) {
+        const { data: owner } = await supabase.auth.admin.getUserById(org.owner_id);
+        replyTo = owner?.user?.email ?? undefined;
+      }
 
       // --- 1. Seed schedules for newly failed payments ----------------------
       const lookback = new Date(Date.now() - SEED_LOOKBACK_DAYS * 86400000)
@@ -211,7 +219,12 @@ serve(async (req: Request) => {
             .eq("id", payment.student_id);
 
           if (student?.email) {
-            await sendEmail({ ...membershipFrozenEmail(org.name, studentName, amount), to: student.email });
+            await sendEmail({
+              ...membershipFrozenEmail(org.name, studentName, amount),
+              to: student.email,
+              fromName: org.name,
+              replyTo,
+            });
           }
           await supabase
             .from("dunning_attempts")
@@ -246,7 +259,7 @@ serve(async (req: Request) => {
           const msg = nextAttempt.is_final
             ? finalNoticeEmail(org.name, studentName, amount, nextAttempt.scheduled_for)
             : paymentFailedEmail(org.name, studentName, amount, nextAttempt.scheduled_for);
-          await sendEmail({ ...msg, to: student.email });
+          await sendEmail({ ...msg, to: student.email, fromName: org.name, replyTo });
           await supabase.from("dunning_attempts").update({ notified_at: nowIso }).eq("id", attempt.id);
         }
 

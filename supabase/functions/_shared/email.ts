@@ -16,6 +16,24 @@ export interface EmailMessage {
   to: string;
   subject: string;
   html: string;
+  // Display name for the sender (e.g. the gym's name). The address always stays
+  // the platform's verified DUNNING_FROM_EMAIL; only the friendly name changes.
+  fromName?: string;
+  // Address replies should go to (e.g. the gym's billing email).
+  replyTo?: string;
+}
+
+// Extract the bare address from a "Name <addr@x>" or "addr@x" string.
+function bareAddress(from: string): string {
+  const match = from.match(/<([^>]+)>/);
+  return (match ? match[1] : from).trim();
+}
+
+// Build a "Name <addr@x>" header, stripping characters that would break it.
+function formatFrom(name: string, baseFrom: string): string {
+  const clean = name.replace(/["<>\r\n]/g, "").trim();
+  const address = bareAddress(baseFrom);
+  return clean ? `${clean} <${address}>` : baseFrom;
 }
 
 export async function sendEmail(message: EmailMessage): Promise<boolean> {
@@ -29,6 +47,9 @@ export async function sendEmail(message: EmailMessage): Promise<boolean> {
     return false;
   }
 
+  const baseFrom = Deno.env.get("DUNNING_FROM_EMAIL") || DEFAULT_FROM;
+  const from = message.fromName ? formatFrom(message.fromName, baseFrom) : baseFrom;
+
   try {
     const res = await fetch(RESEND_ENDPOINT, {
       method: "POST",
@@ -37,10 +58,11 @@ export async function sendEmail(message: EmailMessage): Promise<boolean> {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: Deno.env.get("DUNNING_FROM_EMAIL") || DEFAULT_FROM,
+        from,
         to: message.to,
         subject: message.subject,
         html: message.html,
+        ...(message.replyTo ? { reply_to: message.replyTo } : {}),
       }),
     });
     if (!res.ok) {
