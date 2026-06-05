@@ -49,6 +49,7 @@ import AppearanceCard from "@/components/AppearanceCard";
 import LogoUpload from "@/components/LogoUpload";
 import StaffManagementCard from "@/components/StaffManagementCard";
 import AuditLogCard from "@/components/AuditLogCard";
+import DunningSettingsCard from "@/components/DunningSettingsCard";
 
 const settingsSchema = z.object({
   name: z.string().min(2, "Academy name must be at least 2 characters"),
@@ -287,6 +288,7 @@ export default function Settings() {
       <StaffManagementCard />
       <WaiverCard />
       <StripeConnectCard />
+      <DunningSettingsCard />
       <AuditLogCard />
       <DangerZoneCard />
     </div>

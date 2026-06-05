@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.86.0";
 import Stripe from "https://esm.sh/stripe@12.3.0";
 import { corsHeaders } from "../_shared/cors.ts";
 import { recordAudit } from "../_shared/audit.ts";
+import { attemptCharge } from "../_shared/charge.ts";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") as string, {
   apiVersion: "2023-10-16",
@@ -91,97 +92,8 @@ serve(async (req: Request) => {
       });
     }
 
-    const stripeOptions = { stripeAccount: org.stripe_account_id };
-    let chargeSucceeded = false;
-    let newFailureReason = "Payment failed";
-    let newFailureCode: string | null = null;
-
-    // Attempt 1: pay the specific invoice we stored
-    const invoiceId = payment.stripe_invoice_id;
-    if (invoiceId) {
-      try {
-        const paid = await stripe.invoices.pay(invoiceId, { forgive: true }, stripeOptions);
-        chargeSucceeded = paid.status === "paid";
-        if (!chargeSucceeded) {
-          const chargeId = paid.charge as string;
-          if (chargeId) {
-            const charge = await stripe.charges.retrieve(chargeId, {}, stripeOptions);
-            newFailureCode = charge.failure_code ?? null;
-            newFailureReason = charge.failure_message || newFailureReason;
-          }
-        }
-      } catch (err: any) {
-        console.error("Invoice pay error:", err);
-        newFailureReason = err?.message || newFailureReason;
-        newFailureCode = err?.raw?.decline_code || err?.raw?.code || null;
-      }
-    }
-
-    // Attempt 2: if no stored invoice but subscription exists, pay its latest open invoice
-    if (!chargeSucceeded && !invoiceId && student.subscription_id) {
-      try {
-        const sub = await stripe.subscriptions.retrieve(student.subscription_id, stripeOptions);
-        const latestInvoiceId = sub.latest_invoice as string;
-        if (latestInvoiceId) {
-          const paid = await stripe.invoices.pay(latestInvoiceId, { forgive: true }, stripeOptions);
-          chargeSucceeded = paid.status === "paid";
-          if (!chargeSucceeded) {
-            const chargeId = paid.charge as string;
-            if (chargeId) {
-              const charge = await stripe.charges.retrieve(chargeId, {}, stripeOptions);
-              newFailureCode = charge.failure_code ?? null;
-              newFailureReason = charge.failure_message || newFailureReason;
-            }
-          }
-        }
-      } catch (err: any) {
-        console.error("Subscription invoice pay error:", err);
-        newFailureReason = err?.message || newFailureReason;
-        newFailureCode = err?.raw?.decline_code || err?.raw?.code || null;
-      }
-    }
-
-    // Attempt 3: fall back to a direct PaymentIntent with saved default card
-    if (!chargeSucceeded && !invoiceId && !student.subscription_id) {
-      try {
-        const customer = await stripe.customers.retrieve(
-          student.stripe_customer_id,
-          {},
-          stripeOptions
-        ) as Stripe.Customer;
-
-        const defaultPmId = customer.invoice_settings?.default_payment_method as string | null;
-        if (!defaultPmId) {
-          return new Response(JSON.stringify({ error: "No default payment method on file" }), {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-
-        const pi = await stripe.paymentIntents.create({
-          amount: Math.round(payment.amount * 100),
-          currency: "usd",
-          customer: student.stripe_customer_id,
-          payment_method: defaultPmId,
-          confirm: true,
-          off_session: true,
-          metadata: {
-            studentId: payment.student_id.toString(),
-            organizationId: payment.organization_id,
-          },
-        }, stripeOptions);
-
-        chargeSucceeded = pi.status === "succeeded";
-        if (!chargeSucceeded) {
-          newFailureCode = pi.last_payment_error?.code ?? null;
-          newFailureReason = pi.last_payment_error?.message || newFailureReason;
-        }
-      } catch (err: any) {
-        console.error("PaymentIntent error:", err);
-        newFailureReason = err?.message || newFailureReason;
-        newFailureCode = err?.raw?.decline_code || err?.raw?.code || null;
-      }
-    }
+    const { succeeded: chargeSucceeded, failureReason: newFailureReason, failureCode: newFailureCode } =
+      await attemptCharge(stripe, payment, student, org.stripe_account_id);
 
     if (chargeSucceeded) {
       await supabase.from("payments").update({

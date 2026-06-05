@@ -1,1 +1,6 @@
 project_id = "ttaebhlbialxxsmgvreb"
+
+# Invoked by pg_cron (no end-user JWT). The function authorizes callers itself by
+# checking the service-role key in the Authorization header.
+[functions.process-dunning]
+verify_jwt = false

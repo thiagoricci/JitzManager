@@ -245,6 +245,7 @@ jitz-manager/
 │   │   ├── get-enrollment-details/
 │   │   ├── get-payment-methods/
 │   │   ├── get-waiver/
+│   │   ├── process-dunning/
 │   │   ├── refund-payment/
 │   │   ├── retry-payment/
 │   │   ├── set-default-payment-method/
@@ -359,7 +360,8 @@ The application uses Supabase Edge Functions for secure Stripe operations:
 - **`create-setup-session`**: Creates Stripe setup sessions for adding payment methods
 - **`charge-student`**: Charges a student's saved payment method
 - **`refund-payment`**: Refunds a previous payment
-- **`retry-payment`**: Retries a failed payment
+- **`retry-payment`**: Retries a failed payment (manual "Retry now")
+- **`process-dunning`**: Daily cron-invoked runner that auto-retries failed payments on a schedule, emails the member, and freezes the membership after the final attempt
 - **`delete-payment-method`**: Removes a saved payment method
 - **`set-default-payment-method`**: Sets the default payment method
 - **`get-payment-methods`**: Retrieves saved payment methods
