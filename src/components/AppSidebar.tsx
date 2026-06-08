@@ -64,15 +64,15 @@ export function AppSidebar() {
                     to={item.url}
                     end
                     className={cn(
-                      "flex items-center rounded-md p-2 h-12",
+                      "flex items-center rounded-md p-2 h-9",
                       "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                       "transition-colors",
-                      "gap-3 px-4",
-                      "group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-2 group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:w-12"
+                      "gap-3 px-3",
+                      "group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-2 group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:w-10"
                     )}
                     activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
                   >
-                    <item.icon className="h-6 w-6 shrink-0 group-data-[collapsible=icon]:h-7 group-data-[collapsible=icon]:w-7" />
+                    <item.icon className="h-4 w-4 shrink-0" />
                     <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
                   </NavLink>
                 </SidebarMenuItem>
@@ -90,15 +90,15 @@ export function AppSidebar() {
                     to={item.url}
                     end
                     className={cn(
-                      "flex items-center rounded-md p-2 h-12",
+                      "flex items-center rounded-md p-2 h-9",
                       "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                       "transition-colors",
-                      "gap-3 px-4",
-                      "group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-2 group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:w-12"
+                      "gap-3 px-3",
+                      "group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-2 group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:w-10"
                     )}
                     activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
                   >
-                    <item.icon className="h-6 w-6 shrink-0 group-data-[collapsible=icon]:h-7 group-data-[collapsible=icon]:w-7" />
+                    <item.icon className="h-4 w-4 shrink-0" />
                     <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
                   </NavLink>
                 </SidebarMenuItem>

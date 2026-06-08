@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { CheckCircle, ChevronLeft, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +25,56 @@ interface EnrollmentDetails {
 }
 
 type Step = "contact" | "waiver" | "submitting";
+
+const STEPS = [
+  { key: "contact", label: "Contact" },
+  { key: "waiver", label: "Waiver" },
+  { key: "submitting", label: "Payment" },
+] as const;
+
+function StepIndicator({ current }: { current: Step }) {
+  const currentIndex = STEPS.findIndex((s) => s.key === current);
+  return (
+    <div className="flex items-center justify-center gap-1 mb-6">
+      {STEPS.map((step, i) => {
+        const isActive = i === currentIndex;
+        const isCompleted = i < currentIndex;
+        return (
+          <div key={step.key} className="flex items-center">
+            <div className="flex flex-col items-center gap-1">
+              <div
+                className={cn(
+                  "flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold transition-colors",
+                  isActive && "bg-primary text-primary-foreground",
+                  isCompleted && "bg-primary/15 text-primary",
+                  !isActive && !isCompleted && "bg-muted text-muted-foreground"
+                )}
+              >
+                {isCompleted ? "✓" : i + 1}
+              </div>
+              <span
+                className={cn(
+                  "text-xs font-medium",
+                  isActive ? "text-foreground" : "text-muted-foreground"
+                )}
+              >
+                {step.label}
+              </span>
+            </div>
+            {i < STEPS.length - 1 && (
+              <div
+                className={cn(
+                  "mx-2 h-px w-8 mt-[-1.125rem]",
+                  i < currentIndex ? "bg-primary" : "bg-border"
+                )}
+              />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 export default function Join() {
   const { organizationId, planId } = useParams();
@@ -133,8 +184,9 @@ export default function Join() {
   if (step === "submitting") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted/50 px-4">
-        <Card className="w-full max-w-md text-center">
+        <Card className="w-full max-w-md">
           <CardContent className="pt-8 pb-8 space-y-3">
+            <StepIndicator current={step} />
             <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
             <p className="text-sm text-muted-foreground">Redirecting to secure payment…</p>
           </CardContent>
@@ -148,6 +200,7 @@ export default function Join() {
       <div className="min-h-screen flex items-center justify-center bg-muted/50 px-4 py-10">
         <Card className="w-full max-w-lg">
           <CardHeader className="space-y-1">
+            <StepIndicator current={step} />
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setStep("contact")}
@@ -243,6 +296,7 @@ export default function Join() {
     <div className="min-h-screen flex items-center justify-center bg-muted/50 px-4 py-10">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
+          <StepIndicator current={step} />
           <p className="text-sm font-medium text-primary">{details.organizationName}</p>
           <CardTitle className="text-2xl font-bold">Join {details.plan.name}</CardTitle>
           <CardDescription>
@@ -297,6 +351,7 @@ export default function Join() {
                   type="date"
                   value={dateOfBirth}
                   onChange={(e) => setDateOfBirth(e.target.value)}
+                  max={new Date().toISOString().split('T')[0]}
                   required
                 />
               </div>

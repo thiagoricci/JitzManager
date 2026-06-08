@@ -1,18 +1,19 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Search,
   Mail,
   Phone,
   MoreHorizontal,
-  ArrowUpDown,
   Upload,
+  UsersRound,
+  Plus,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { cn, getAvatarColor } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import BeltBadge, { BeltRank } from "@/components/BeltBadge";
-import { useNavigate } from "react-router-dom";
 import {
   Table,
   TableBody,
@@ -56,6 +57,7 @@ import ImportStudentsDialog, { StudentImportData } from "@/components/ImportStud
 
 export default function Students() {
   const { organization, can } = useAuth();
+  const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [studentToDelete, setStudentToDelete] = useState<string | null>(null);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
@@ -67,6 +69,14 @@ export default function Students() {
   const studentsPerPage = 10;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchQuery(searchInput);
+      setCurrentPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   const deleteStudentMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -114,19 +124,24 @@ export default function Students() {
   });
 
   const { data, isLoading } = useQuery({
-    queryKey: ["students", sortConfig, currentPage, organization?.id],
+    queryKey: ["students", sortConfig, currentPage, searchQuery, organization?.id],
     enabled: !!organization?.id,
     queryFn: async () => {
       const from = (currentPage - 1) * studentsPerPage;
       const to = from + studentsPerPage - 1;
 
-      const { data, error, count } = await supabase
+      let query = supabase
         .from("students")
         .select("*, membership_plans(name)", { count: "exact" })
         .eq("organization_id", organization!.id)
         .order(sortConfig.key, { ascending: sortConfig.direction === "asc" })
         .range(from, to);
 
+      if (searchQuery.trim()) {
+        query = query.ilike("name", `%${searchQuery.trim()}%`);
+      }
+
+      const { data, error, count } = await query;
       if (error) throw error;
       return { data, count };
     },
@@ -136,20 +151,13 @@ export default function Students() {
   const totalStudents = data?.count || 0;
   const totalPages = Math.ceil(totalStudents / studentsPerPage);
 
-  const filteredStudents =
-    students?.filter((student) =>
-      student.name?.toLowerCase().includes(searchQuery.toLowerCase())
-    ) || [];
-
   const handleSort = (key: string) => {
     setSortConfig((prev) => {
-      if (prev.key === key) {
-        return {
-          key,
-          direction: prev.direction === "asc" ? "desc" : "asc",
-        };
-      }
-      return { key, direction: "desc" };
+      const newSort = prev.key === key
+        ? { key, direction: prev.direction === "asc" ? "desc" : "asc" }
+        : { key, direction: "desc" };
+      if (newSort.key !== prev.key) setCurrentPage(1);
+      return newSort;
     });
   };
 
@@ -196,8 +204,8 @@ export default function Students() {
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Search students..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
               className="pl-10"
             />
           </div>
@@ -210,6 +218,36 @@ export default function Students() {
         </div>
       </div>
 
+      {totalStudents === 0 ? (
+        <div className="rounded-md border">
+          <div className="flex flex-col items-center justify-center py-16 gap-4">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted">
+              <UsersRound className="h-7 w-7 text-muted-foreground" />
+            </div>
+            <div className="text-center space-y-1">
+              <p className="font-medium text-foreground">No students yet</p>
+              <p className="text-sm text-muted-foreground">
+                Get started by adding your first student or importing from a spreadsheet.
+              </p>
+            </div>
+            {can("manage_students") && (
+              <div className="flex gap-2 mt-2">
+                <Link to="/add-student">
+                  <Button>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Student
+                  </Button>
+                </Link>
+                <Button variant="outline" onClick={() => setIsImportDialogOpen(true)}>
+                  <Upload className="mr-2 h-4 w-4" />
+                  Import
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+      <>
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -237,7 +275,7 @@ export default function Students() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredStudents.map((student) => (
+            {students.map((student) => (
               <TableRow
                 key={student.id}
                 className="cursor-pointer transition-colors"
@@ -291,14 +329,18 @@ export default function Students() {
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
                   <div className="flex flex-col text-sm text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                      <Mail className="h-3 w-3" />
-                      <span>{student.email}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-3 w-3" />
-                      <span>{student.phone}</span>
-                    </div>
+                    {student.email && (
+                      <div className="flex items-center gap-2">
+                        <Mail className="h-3 w-3" />
+                        <span>{student.email}</span>
+                      </div>
+                    )}
+                    {student.phone && (
+                      <div className="flex items-center gap-2">
+                        <Phone className="h-3 w-3" />
+                        <span>{student.phone}</span>
+                      </div>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell className="hidden lg:table-cell text-muted-foreground">
@@ -347,33 +389,63 @@ export default function Students() {
         <div className="text-sm text-muted-foreground">
           Showing {students.length} of {totalStudents} students.
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <Button
             variant="outline"
-            size="sm"
+            size="icon"
+            className="h-8 w-8"
             onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
             disabled={currentPage === 1}
           >
-            Previous
+            ‹
           </Button>
-          <span className="text-sm">
-            Page {currentPage} of {totalPages}
-          </span>
+          {Array.from({ length: totalPages }, (_, i) => i + 1)
+            .filter((page) => {
+              if (totalPages <= 7) return true;
+              if (page === 1 || page === totalPages) return true;
+              if (Math.abs(page - currentPage) <= 1) return true;
+              return false;
+            })
+            .reduce<(number | "ellipsis")[]>((acc, page, idx, arr) => {
+              if (idx > 0) {
+                const prev = arr[idx - 1];
+                if (page - prev > 1) acc.push("ellipsis");
+              }
+              acc.push(page);
+              return acc;
+            }, [])
+            .map((item, idx) =>
+              item === "ellipsis" ? (
+                <span key={`ellipsis-${idx}`} className="px-1 text-sm text-muted-foreground select-none">…</span>
+              ) : (
+                <Button
+                  key={item}
+                  variant={currentPage === item ? "default" : "outline"}
+                  size="icon"
+                  className="h-8 w-8 text-xs"
+                  onClick={() => setCurrentPage(item)}
+                >
+                  {item}
+                </Button>
+              )
+            )}
           <Button
             variant="outline"
-            size="sm"
+            size="icon"
+            className="h-8 w-8"
             onClick={() =>
               setCurrentPage((prev) => Math.min(prev + 1, totalPages))
             }
             disabled={currentPage === totalPages}
           >
-            Next
+            ›
           </Button>
         </div>
       </div>
+      </>
+      )}
 
       <AlertDialog
-        open={!!studentToDelete}
         onOpenChange={(open) => !open && setStudentToDelete(null)}
       >
         <AlertDialogContent>

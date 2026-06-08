@@ -1,9 +1,16 @@
 import { useState } from "react";
-import { Plus, Users, DollarSign, TrendingUp, Pencil, Trash2, Eye, Link2 } from "lucide-react";
+import { Plus, Users, DollarSign, TrendingUp, Pencil, Trash2, Eye, Link2, MoreVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Skeleton } from "@/components/ui/skeleton";
 import StatCard from "@/components/StatCard";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
@@ -183,7 +190,52 @@ export default function Memberships() {
   };
 
   if (isLoadingPlans || isLoadingStudents) {
-    return <div>Loading...</div>;
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <Skeleton className="h-9 w-48 mb-2" />
+            <Skeleton className="h-4 w-64" />
+          </div>
+          <Skeleton className="h-10 w-28" />
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i} className="overflow-hidden">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-8 w-16" />
+                    <Skeleton className="h-3 w-20" />
+                  </div>
+                  <Skeleton className="h-12 w-12 rounded-xl" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Card key={i}>
+              <CardHeader>
+                <Skeleton className="h-6 w-32" />
+                <Skeleton className="h-4 w-48" />
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Skeleton className="h-10 w-28" />
+                <Skeleton className="h-4 w-36" />
+                <div className="space-y-2 pt-4 border-t">
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-3 w-full" />
+                  <Skeleton className="h-3 w-4/5" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   // Calculate stats
@@ -230,13 +282,11 @@ export default function Memberships() {
           title="Monthly Revenue"
           value={formatMoney(totalRevenue)}
           icon={DollarSign}
-          trend="+12.5%"
         />
         <StatCard
           title="Active Members"
           value={totalActiveMembers}
           icon={Users}
-          trend="+8"
         />
         <StatCard
           title="Average Value"
@@ -247,7 +297,6 @@ export default function Memberships() {
           title="Trial Members"
           value={trialMembers}
           icon={Users}
-          trend="+4"
         />
       </div>
 
@@ -288,7 +337,7 @@ export default function Memberships() {
                 <div className="flex items-center gap-2 text-sm mt-4">
                   <Users className="h-4 w-4 text-primary" />
                   <span className="text-muted-foreground">
-                    {plan.totalMembers} active members
+                    {plan.activeMembers} active · {plan.totalMembers} enrolled
                   </span>
                 </div>
 
@@ -306,56 +355,68 @@ export default function Memberships() {
               </div>
 
               <div className="flex flex-col gap-2 pt-4 mt-4">
-                <Button
-                  variant="secondary"
-                  className="w-full"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(`/membership/${plan.id}`);
-                  }}
-                >
-                  <Eye className="h-4 w-4 mr-2" />
-                  View Students
-                </Button>
-                {!isFreePrice(plan.price) && (
+                <div className="flex gap-2">
                   <Button
-                    variant="outline"
-                    className="w-full"
+                    variant="secondary"
+                    className="flex-1"
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleGenerateLink(plan);
+                      navigate(`/membership/${plan.id}`);
                     }}
                   >
-                    <Link2 className="h-4 w-4 mr-2" />
-                    Copy Sign-up Link
+                    <Eye className="h-4 w-4 mr-2" />
+                    View Students
                   </Button>
-                )}
-                {canManageBilling && (
-                  <div className="flex gap-2">
+                  {!isFreePrice(plan.price) && (
                     <Button
                       variant="outline"
-                      className="flex-1"
+                      size="icon"
+                      className="shrink-0"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleEditPlan(plan);
+                        handleGenerateLink(plan);
                       }}
+                      title="Copy sign-up link"
                     >
-                      <Pencil className="h-4 w-4 mr-2" />
-                      Edit
+                      <Link2 className="h-4 w-4" />
                     </Button>
-                    <Button
-                      variant="outline"
-                      className="flex-1 text-destructive hover:text-destructive"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeletePlan(plan);
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete
-                    </Button>
-                  </div>
-                )}
+                  )}
+                  {canManageBilling && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="shrink-0"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditPlan(plan);
+                          }}
+                        >
+                          <Pencil className="h-4 w-4 mr-2" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeletePlan(plan);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>

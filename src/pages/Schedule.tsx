@@ -30,6 +30,7 @@ import {
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { Plus, Trash2, Edit } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -38,6 +39,16 @@ import {
   ToggleGroup,
   ToggleGroupItem,
 } from "@/components/ui/toggle-group";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -133,6 +144,7 @@ export default function Schedule() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState<ScheduleEntry | null>(null);
+  const [scheduleToDelete, setScheduleToDelete] = useState<ScheduleEntry | null>(null);
   const { user, organization } = useAuth();
   const queryClient = useQueryClient();
 
@@ -318,7 +330,21 @@ export default function Schedule() {
     return map;
   }, [schedules]);
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <Skeleton className="h-9 w-48 mb-2" />
+          <Skeleton className="h-4 w-64" />
+        </div>
+        <Skeleton className="h-10 w-28" />
+      </div>
+      <div className="rounded-lg border bg-card">
+        <Skeleton className="h-9 w-full rounded-t-lg" />
+        <Skeleton className="h-64 w-full rounded-b-lg" />
+      </div>
+    </div>
+  );
 
   return (
     <div className="space-y-6">
@@ -584,9 +610,7 @@ export default function Schedule() {
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               className="text-destructive focus:text-destructive"
-                              onClick={() =>
-                                deleteScheduleMutation.mutate(schedule.id)
-                              }
+                              onClick={() => setScheduleToDelete(schedule)}
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
                               Delete
@@ -602,12 +626,38 @@ export default function Schedule() {
           </div>
         </div>
 
+        {schedules && schedules.length > 0 && (
+          <div className="h-12 bg-muted/20 border-t" />
+        )}
+
         {schedules?.length === 0 && (
           <div className="flex items-center justify-center py-16 text-muted-foreground">
             No classes scheduled yet. Add one to get started.
           </div>
         )}
       </div>
+
+      <AlertDialog open={!!scheduleToDelete} onOpenChange={(open) => !open && setScheduleToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Class</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <span className="font-semibold">{scheduleToDelete?.name}</span> on {daysOfWeek[scheduleToDelete?.day_of_week ?? 0]}? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (scheduleToDelete) deleteScheduleMutation.mutate(scheduleToDelete.id);
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent>

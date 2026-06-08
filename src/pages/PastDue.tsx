@@ -160,9 +160,9 @@ export default function PastDue() {
                   <TableHead>Student</TableHead>
                   <TableHead>Amount</TableHead>
                   <TableHead>Date</TableHead>
-                  <TableHead>Failure Reason</TableHead>
-                  <TableHead>Retries</TableHead>
-                  <TableHead>Next Retry</TableHead>
+                  <TableHead className="hidden md:table-cell">Failure Reason</TableHead>
+                  <TableHead className="hidden lg:table-cell">Retries</TableHead>
+                  <TableHead className="hidden lg:table-cell">Next Retry</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -172,7 +172,7 @@ export default function PastDue() {
                   const isRetrying = retryingId === payment.id;
                   const nextAttempt = nextAttempts?.get(payment.id);
                   return (
-                    <TableRow key={payment.id} className="bg-red-50/40">
+                    <TableRow key={payment.id} className="bg-destructive/5">
                       <TableCell>
                         {payment.student_id ? (
                           <button
@@ -187,7 +187,7 @@ export default function PastDue() {
                       </TableCell>
                       <TableCell>${Number(payment.amount).toFixed(2)}</TableCell>
                       <TableCell>{formatDate(payment.date, organization?.timezone)}</TableCell>
-                      <TableCell className="max-w-[260px]">
+                      <TableCell className="hidden md:table-cell max-w-[260px]">
                         <span className="text-sm text-muted-foreground block truncate">
                           {payment.failure_reason || "Payment failed"}
                         </span>
@@ -197,7 +197,7 @@ export default function PastDue() {
                           </span>
                         )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden lg:table-cell">
                         {exhausted ? (
                           <Badge variant="destructive">Max retries reached</Badge>
                         ) : (
@@ -206,7 +206,7 @@ export default function PastDue() {
                           </Badge>
                         )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden lg:table-cell">
                         {nextAttempt ? (
                           <span className="text-sm">
                             {formatDate(nextAttempt.scheduled_for, organization?.timezone)}

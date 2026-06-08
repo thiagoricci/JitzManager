@@ -33,7 +33,10 @@ const profileSchema = z.object({
 type ProfileFormValues = z.infer<typeof profileSchema>;
 
 export default function Profile() {
-  const { user, profile, isAdmin, refreshProfile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
+  const roleLabel = profile?.role
+    ? profile.role.replace("_", " ").replace(/\b\w/g, (c) => c.toUpperCase())
+    : "Staff";
   const [loading, setLoading] = useState(false);
 
   const form = useForm<ProfileFormValues>({
@@ -103,7 +106,7 @@ export default function Profile() {
 
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium">Role:</span>
-                <Badge variant="secondary">{isAdmin ? "Admin" : "Staff"}</Badge>
+                <Badge variant="secondary">{roleLabel}</Badge>
               </div>
 
               <div className="flex justify-end">

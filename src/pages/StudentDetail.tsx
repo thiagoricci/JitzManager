@@ -2,6 +2,7 @@ import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom"
 import { ArrowLeft, Award, Edit, Trash2, Activity, Calendar, Snowflake, Link2, FileSignature, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import BeltBadge, { BeltRank } from "@/components/BeltBadge";
 import {
@@ -704,7 +705,72 @@ export default function StudentDetail() {
   });
 
   if (isLoadingStudent) {
-    return <div>Loading...</div>;
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-9 w-24" />
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-4">
+              <Skeleton className="h-16 w-16 rounded-full" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-6 w-48" />
+                <Skeleton className="h-5 w-24" />
+              </div>
+              <Skeleton className="h-8 w-[140px]" />
+            </div>
+          </CardContent>
+        </Card>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="space-y-6">
+            <Card>
+              <CardContent className="p-6 space-y-4">
+                <Skeleton className="h-5 w-32" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-6 space-y-4">
+                <Skeleton className="h-5 w-32" />
+                <div className="flex gap-4">
+                  <Skeleton className="h-16 w-16 rounded-lg" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-3 w-16" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          <div className="lg:col-span-2 space-y-6">
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-5 w-32" />
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="flex justify-between py-2">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-4 w-32" />
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-5 w-40" />
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {Array.from({ length: 2 }).map((_, i) => (
+                  <Skeleton key={i} className="h-16 w-full rounded-lg" />
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (!student) {

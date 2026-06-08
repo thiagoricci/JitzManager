@@ -111,14 +111,6 @@ import { Card, CardContent } from "@/components/ui/card";
   const activeStudentsList = students?.filter(s => s.status === 'student' && s.membership_status === 'active') || [];
   const activeStudentsCount = activeStudentsList.length;
 
-  const lastMonthActiveStudentsCount = activeStudentsList.filter(s =>
-    isBeforeOrInMonth(s.join_date, lastMonth, lastMonthYear)
-  ).length;
-
-  const activeStudentsTrend = lastMonthActiveStudentsCount > 0
-    ? Math.round(((activeStudentsCount - lastMonthActiveStudentsCount) / lastMonthActiveStudentsCount) * 100)
-    : 0;
-
   // 3. New Students (no trials) - joined this month
   const newStudentsList = students?.filter(s => s.status === 'student' && isInMonth(s.join_date, currentMonth, currentYear)) || [];
   const newStudentsCount = newStudentsList.length;
@@ -158,8 +150,6 @@ import { Card, CardContent } from "@/components/ui/card";
           title="Active Students"
           value={activeStudentsCount}
           icon={UserCheck}
-          trend={`${activeStudentsTrend > 0 ? '+' : ''}${activeStudentsTrend}% overtime`}
-          trendUp={activeStudentsTrend >= 0}
         />
         <StatCard
           title="New Students"

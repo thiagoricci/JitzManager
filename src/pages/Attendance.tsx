@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { formatDate, getTodayInTimezone, getDayOfWeekInTimezone } from "@/lib/date";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -289,7 +290,36 @@ export default function Attendance() {
   const checkedInStudentIds = new Set(classAttendance?.map(a => a.student_id));
 
   if (isLoadingStudents) {
-    return <div>Loading...</div>;
+    return (
+      <div className="space-y-6 h-[calc(100vh-4rem)] flex flex-col">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between shrink-0">
+          <div>
+            <Skeleton className="h-9 w-48 mb-2" />
+            <Skeleton className="h-4 w-64" />
+          </div>
+          <Skeleton className="h-10 w-80" />
+        </div>
+        <Skeleton className="h-20 w-full rounded-lg" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0">
+          <div className="lg:col-span-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Card key={i}>
+                  <CardContent className="p-4 flex items-center gap-4">
+                    <Skeleton className="h-12 w-12 rounded-full" />
+                    <div className="flex-1 space-y-2">
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-5 w-16" />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+          <Skeleton className="rounded-lg h-full" />
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -361,7 +391,7 @@ export default function Attendance() {
       </div>
 
       {!currentClass ? (
-        <Alert variant="destructive">
+        <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>No Active Class</AlertTitle>
           <AlertDescription>
@@ -440,7 +470,21 @@ export default function Attendance() {
           
           <ScrollArea className="flex-1">
             <div className="space-y-3 pr-4">
-              {classAttendance?.map((record) => (
+              {isLoadingAttendance ? (
+                <div className="space-y-3">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="flex items-center gap-3 bg-background p-3 rounded-md border">
+                      <Skeleton className="h-8 w-8 rounded-full" />
+                      <div className="flex-1 space-y-1.5">
+                        <Skeleton className="h-3.5 w-24" />
+                        <Skeleton className="h-3 w-16" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <>
+                  {classAttendance?.map((record) => (
                 <div
                   key={record.id}
                   className={`flex items-center gap-3 bg-background p-3 rounded-md border shadow-sm ${
@@ -475,6 +519,8 @@ export default function Attendance() {
                     ? "No students checked in yet for this class."
                     : "No active class session."}
                 </div>
+              )}
+                </>
               )}
             </div>
           </ScrollArea>

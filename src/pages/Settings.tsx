@@ -84,6 +84,7 @@ const timezones = [
 export default function Settings() {
   const { organization, refreshProfile } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("general");
 
   const form = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsSchema),
@@ -152,8 +153,24 @@ export default function Settings() {
         </p>
       </div>
 
-      <Tabs defaultValue="general" className="space-y-6">
-        <TabsList className="w-full justify-start overflow-x-auto">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <div className="md:hidden">
+          <Select value={activeTab} onValueChange={setActiveTab}>
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="general">General</SelectItem>
+              <SelectItem value="appearance">Appearance</SelectItem>
+              <SelectItem value="payments">Payments</SelectItem>
+              <SelectItem value="waiver">Waiver</SelectItem>
+              <SelectItem value="staff">Staff</SelectItem>
+              <SelectItem value="billing">Billing</SelectItem>
+              <SelectItem value="audit">Audit Log</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <TabsList className="hidden md:flex w-full justify-start overflow-x-auto">
           <TabsTrigger value="general">General</TabsTrigger>
           <TabsTrigger value="appearance">Appearance</TabsTrigger>
           <TabsTrigger value="payments">Payments</TabsTrigger>

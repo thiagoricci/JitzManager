@@ -61,7 +61,14 @@ export default function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/50 px-4" style={brandFixedStyles}>
       <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
+        <CardHeader className="space-y-1 text-center">
+          <div className="flex justify-center mb-2">
+            <img
+              src="/logo.png"
+              alt="JitzManager"
+              className="h-12 w-12 rounded-xl object-contain"
+            />
+          </div>
           <CardTitle className="text-2xl font-bold">Login</CardTitle>
           <CardDescription>
             Enter your email and password to access your account

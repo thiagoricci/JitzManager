@@ -186,7 +186,7 @@ export default function AddStudent() {
                     <FormItem>
                       <FormLabel>Date of Birth</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} />
+                        <Input type="date" max={new Date().toISOString().split('T')[0]} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -195,6 +195,14 @@ export default function AddStudent() {
               </div>
 
               <div className="flex gap-4 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => navigate(-1)}
+                >
+                  Cancel
+                </Button>
                 <Button
                   type="submit"
                   className="w-full"
