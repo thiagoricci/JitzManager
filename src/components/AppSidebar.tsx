@@ -40,14 +40,14 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="p-4">
-        <div className="px-2 flex items-center gap-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
+        <div className="px-2 flex flex-col items-center gap-1.5 group-data-[collapsible=icon]:px-0">
           <img
             src={organization?.logo_url || "/logo.png"}
             alt={organization?.name || "JitzManager"}
-            className="h-12 w-12 shrink-0 object-contain rounded-xl group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:w-10"
+            className="h-14 w-14 shrink-0 object-contain rounded-xl group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:w-10"
           />
           <h1
-            className="text-base font-bold leading-tight line-clamp-2 font-display group-data-[collapsible=icon]:hidden"
+            className="text-sm font-semibold leading-tight text-center line-clamp-2 max-w-[140px] font-display group-data-[collapsible=icon]:hidden"
             title={organization?.name || "Academy Manager"}
           >
             {organization?.name || "Academy Manager"}

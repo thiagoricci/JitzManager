@@ -29,6 +29,7 @@ import { formatDate } from "@/lib/date";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState, useEffect } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import StudentStatusBadge from "@/components/StudentStatusBadge";
 
 export default function MembershipDetail() {
   useEffect(() => {
@@ -147,18 +148,7 @@ export default function MembershipDetail() {
                 <p className="font-medium text-sm truncate">{student.name || "Unknown Student"}</p>
                 <div className="flex items-center gap-2 mt-0.5">
                   <BeltBadge rank={student.belt as BeltRank} className="scale-75 origin-left" />
-                  <Badge
-                    variant="secondary"
-                    className={cn(
-                      "text-[10px] h-5 px-1.5",
-                      student.status === "student" && student.membership_status === "active" && "bg-green-500 text-white",
-                      student.status === "student" && student.membership_status === "inactive" && "bg-gray-500 text-white",
-                      student.status === "student" && student.membership_status === "frozen" && "bg-yellow-500 text-white",
-                      student.status === "trial" && "bg-blue-100 text-blue-800"
-                    )}
-                  >
-                    {student.status === "trial" ? "Trial" : student.membership_status ? student.membership_status.charAt(0).toUpperCase() + student.membership_status.slice(1) : "None"}
-                  </Badge>
+                  <StudentStatusBadge status={student.status} membershipStatus={student.membership_status} variant="filled" className="text-[10px] h-5 px-1.5" />
                 </div>
               </div>
               <DropdownMenu>
@@ -232,34 +222,7 @@ export default function MembershipDetail() {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Badge
-                    variant={student.status === "trial" ? "secondary" : student.status === "none" || !student.status ? "secondary" : "default"}
-                    className={cn(
-                      "text-xs",
-                      student.status === "student" &&
-                        student.membership_status === "active" &&
-                        "bg-green-500 hover:bg-green-600",
-                      student.status === "student" &&
-                        student.membership_status === "inactive" &&
-                        "bg-gray-500 hover:bg-gray-600",
-                      student.status === "student" &&
-                        student.membership_status === "frozen" &&
-                        "bg-yellow-500 hover:bg-yellow-600",
-                      student.status === "trial" &&
-                        "bg-blue-100 text-blue-800 hover:bg-blue-200",
-                      (student.status === "none" || !student.status) &&
-                        "bg-gray-100 text-gray-800 hover:bg-gray-200"
-                    )}
-                  >
-                    {student.status === "trial"
-                      ? "Trial"
-                      : student.status === "none" || !student.status
-                      ? "None"
-                      : student.membership_status
-                      ? student.membership_status.charAt(0).toUpperCase() +
-                        student.membership_status.slice(1)
-                      : "-"}
-                  </Badge>
+                  <StudentStatusBadge status={student.status} membershipStatus={student.membership_status} variant="filled" />
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
                   <div className="flex flex-col text-sm text-muted-foreground">

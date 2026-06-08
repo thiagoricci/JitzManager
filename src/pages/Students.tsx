@@ -55,6 +55,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import ImportStudentsDialog, { StudentImportData } from "@/components/ImportStudentsDialog";
+import StudentStatusBadge from "@/components/StudentStatusBadge";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 export default function Students() {
@@ -270,39 +271,7 @@ export default function Students() {
               <div className="flex-1 min-w-0">
                 <p className="font-medium truncate text-sm">{student.name || "Unknown Student"}</p>
                 <div className="flex items-center gap-2 mt-0.5">
-                  <Badge
-                    variant="outline"
-                    className={cn(
-                      "text-[10px] font-medium px-1.5 py-0 h-5",
-                      student.membership_status === "active" &&
-                        "bg-green-50 text-green-700 border-green-200",
-                      student.membership_status === "inactive" &&
-                        "bg-gray-100 text-gray-600 border-gray-200",
-                      student.membership_status === "frozen" &&
-                        "bg-amber-50 text-amber-700 border-amber-200",
-                      student.status === "trial" &&
-                        student.membership_status !== "inactive" &&
-                        student.membership_status !== "frozen" &&
-                        "bg-blue-50 text-blue-700 border-blue-200",
-                      (student.status === "none" || !student.status) &&
-                        student.membership_status !== "active" &&
-                        student.membership_status !== "inactive" &&
-                        student.membership_status !== "frozen" &&
-                        "bg-gray-50 text-gray-500 border-gray-200"
-                    )}
-                  >
-                    {student.membership_status === "inactive"
-                      ? "Inactive"
-                      : student.membership_status === "frozen"
-                      ? "Frozen"
-                      : student.membership_status === "active"
-                      ? "Active"
-                      : student.status === "trial"
-                      ? "Trial"
-                      : student.status === "none" || !student.status
-                      ? "None"
-                      : "-"}
-                  </Badge>
+                  <StudentStatusBadge status={student.status} membershipStatus={student.membership_status} className="text-[10px] px-1.5 py-0 h-5" />
                   {student.phone && (
                     <span className="text-xs text-muted-foreground truncate">{student.phone}</span>
                   )}
@@ -388,39 +357,7 @@ export default function Students() {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Badge
-                    variant="outline"
-                    className={cn(
-                      "text-xs font-medium",
-                      student.membership_status === "active" &&
-                        "bg-green-50 text-green-700 border-green-200",
-                      student.membership_status === "inactive" &&
-                        "bg-gray-100 text-gray-600 border-gray-200",
-                      student.membership_status === "frozen" &&
-                        "bg-amber-50 text-amber-700 border-amber-200",
-                      student.status === "trial" &&
-                        student.membership_status !== "inactive" &&
-                        student.membership_status !== "frozen" &&
-                        "bg-blue-50 text-blue-700 border-blue-200",
-                      (student.status === "none" || !student.status) &&
-                        student.membership_status !== "active" &&
-                        student.membership_status !== "inactive" &&
-                        student.membership_status !== "frozen" &&
-                        "bg-gray-50 text-gray-500 border-gray-200"
-                    )}
-                  >
-                    {student.membership_status === "inactive"
-                      ? "Inactive"
-                      : student.membership_status === "frozen"
-                      ? "Frozen"
-                      : student.membership_status === "active"
-                      ? "Active"
-                      : student.status === "trial"
-                      ? "Trial"
-                      : student.status === "none" || !student.status
-                      ? "None"
-                      : "-"}
-                  </Badge>
+                  <StudentStatusBadge status={student.status} membershipStatus={student.membership_status} />
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
                   <div className="flex flex-col text-sm text-muted-foreground">

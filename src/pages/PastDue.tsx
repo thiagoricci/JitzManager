@@ -164,7 +164,6 @@ export default function PastDue() {
                 {payments.map((payment) => {
                   const exhausted = payment.retry_count >= MAX_RETRIES;
                   const isRetrying = retryingId === payment.id;
-                  const nextAttempt = nextAttempts?.get(payment.id);
                   return (
                     <div key={payment.id} className="rounded-lg border bg-destructive/5 p-3 space-y-2">
                       <div className="flex items-center justify-between">

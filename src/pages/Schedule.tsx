@@ -531,10 +531,7 @@ export default function Schedule() {
             <div className="space-y-2">
               {(selectedDay !== null
                 ? schedulesByDay[selectedDay] || []
-                : (schedules || []).reduce((acc: ScheduleEntry[], daySchedules: ScheduleEntry[], dayIdx: number) => {
-                    schedulesByDay[dayIdx]?.forEach((s: ScheduleEntry) => acc.push(s));
-                    return acc;
-                  }, [])
+                : schedules || []
               ).map((schedule: ScheduleEntry) => {
                 const colorIndex = colorMap[schedule.name] ?? 0;
                 return (

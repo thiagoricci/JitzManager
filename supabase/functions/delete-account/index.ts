@@ -56,7 +56,9 @@ serve(async (req: Request) => {
 
     // 1. Cancel Platform Subscription in Stripe
     const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
-    if (stripeSecretKey) {
+    if (!stripeSecretKey) {
+      console.warn("STRIPE_SECRET_KEY not configured — skipping Stripe cleanup. Active subscriptions may be orphaned.");
+    } else {
       const stripe = new Stripe(stripeSecretKey, {
         apiVersion: "2023-10-16",
         httpClient: Stripe.createFetchHttpClient(),
@@ -120,6 +122,7 @@ serve(async (req: Request) => {
       .eq("organization_id", organizationId);
     if (deleteAuditError) {
       console.error("Error deleting audit_log:", deleteAuditError);
+      throw deleteAuditError;
     }
 
     // 4. Delete Organization (CASCADE handles all remaining related data)
