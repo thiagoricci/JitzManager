@@ -19,6 +19,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 // Mirror of MAX_RETRIES in supabase/functions/retry-payment/index.ts. Once a
 // payment hits this many attempts it can no longer be retried from here.
@@ -43,6 +44,7 @@ export default function PastDue() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [retryingId, setRetryingId] = useState<number | null>(null);
+  const isMobile = useIsMobile();
 
   const { data: payments, isLoading } = useQuery({
     queryKey: ["past-due-payments", organization?.id],
@@ -129,14 +131,14 @@ export default function PastDue() {
     <Seo title="Past Due Payments" />
     <div className="space-y-6">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight text-foreground">Past Due</h2>
-        <p className="text-muted-foreground">
+        <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">Past Due</h2>
+        <p className="text-sm text-muted-foreground">
           Overdue and failed payments across all students. Retry a charge against
           the saved payment method.
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-3 md:gap-4 grid-cols-3">
         <StatCard
           title="Outstanding"
           value={`$${totalOutstanding.toFixed(2)}`}
@@ -157,6 +159,59 @@ export default function PastDue() {
           {isLoading ? (
             <div className="text-sm text-muted-foreground">Loading past-due payments...</div>
           ) : payments && payments.length > 0 ? (
+            isMobile ? (
+              <div className="space-y-2">
+                {payments.map((payment) => {
+                  const exhausted = payment.retry_count >= MAX_RETRIES;
+                  const isRetrying = retryingId === payment.id;
+                  const nextAttempt = nextAttempts?.get(payment.id);
+                  return (
+                    <div key={payment.id} className="rounded-lg border bg-destructive/5 p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        {payment.student_id ? (
+                          <button
+                            className="font-medium text-primary hover:underline text-sm"
+                            onClick={() => navigate(`/student/${payment.student_id}`)}
+                          >
+                            {payment.students?.name ?? "Unknown student"}
+                          </button>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">Unknown student</span>
+                        )}
+                        <span className="text-sm font-semibold">${Number(payment.amount).toFixed(2)}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span>{formatDate(payment.date, organization?.timezone)}</span>
+                        {exhausted ? (
+                          <Badge variant="destructive" className="text-[10px] h-5">Max retries</Badge>
+                        ) : (
+                          <Badge variant="secondary" className="text-[10px] h-5">
+                            {payment.retry_count}/{MAX_RETRIES}
+                          </Badge>
+                        )}
+                      </div>
+                      {payment.failure_reason && (
+                        <p className="text-xs text-muted-foreground truncate">{payment.failure_reason}</p>
+                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full h-8 text-xs"
+                        disabled={exhausted || isRetrying}
+                        onClick={() => retryMutation.mutate(payment)}
+                      >
+                        {isRetrying ? (
+                          <RefreshCw className="h-3 w-3 mr-1.5 animate-spin" />
+                        ) : (
+                          <RotateCw className="h-3 w-3 mr-1.5" />
+                        )}
+                        {isRetrying ? "Retrying..." : "Retry now"}
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -241,6 +296,7 @@ export default function PastDue() {
                 })}
               </TableBody>
             </Table>
+            )
           ) : (
             <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100">

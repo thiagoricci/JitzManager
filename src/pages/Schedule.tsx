@@ -57,6 +57,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ScheduleEntry {
   id: number;
@@ -146,8 +147,10 @@ export default function Schedule() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState<ScheduleEntry | null>(null);
   const [scheduleToDelete, setScheduleToDelete] = useState<ScheduleEntry | null>(null);
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const { user, organization } = useAuth();
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
 
   const addForm = useForm<z.infer<typeof addFormSchema>>({
     resolver: zodResolver(addFormSchema),
@@ -351,12 +354,12 @@ export default function Schedule() {
     <>
     <Seo title="Schedule" />
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight text-foreground">
+          <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
             Class Schedule
           </h2>
-          <p className="text-muted-foreground">Manage your weekly class schedule</p>
+          <p className="text-sm text-muted-foreground">Manage your weekly class schedule</p>
         </div>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
@@ -486,6 +489,105 @@ export default function Schedule() {
         </Dialog>
       </div>
 
+      {/* Mobile: Day selector + list view */}
+      {isMobile && (
+        <div className="space-y-3">
+          <div className="flex gap-1 overflow-x-auto pb-1 -mx-1 px-1">
+            {dayAbbrevs.map((day, i) => {
+              const daySchedules = schedulesByDay[i] || [];
+              return (
+                <button
+                  key={i}
+                  onClick={() => setSelectedDay(selectedDay === i ? null : i)}
+                  className={cn(
+                    "flex flex-col items-center px-3 py-2 rounded-lg text-xs font-medium shrink-0 transition-colors",
+                    selectedDay === i
+                      ? "bg-primary text-primary-foreground"
+                      : i === todayDayOfWeek
+                      ? "bg-primary/10 text-primary"
+                      : "bg-muted text-muted-foreground hover:bg-muted/80",
+                    daySchedules.length > 0 && selectedDay !== i && "ring-1 ring-primary/30"
+                  )}
+                >
+                  <span>{day}</span>
+                  {daySchedules.length > 0 && (
+                    <span className={cn(
+                      "mt-0.5 h-1 w-1 rounded-full",
+                      selectedDay === i ? "bg-primary-foreground" : "bg-primary"
+                    )} />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {(selectedDay !== null ? schedulesByDay[selectedDay] || [] : schedules || []).length === 0 ? (
+            <div className="flex items-center justify-center py-12 text-muted-foreground text-sm">
+              {selectedDay !== null
+                ? `No classes on ${daysOfWeek[selectedDay]}s.`
+                : "No classes scheduled yet. Add one to get started."}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {(selectedDay !== null
+                ? schedulesByDay[selectedDay] || []
+                : (schedules || []).reduce((acc: ScheduleEntry[], daySchedules: ScheduleEntry[], dayIdx: number) => {
+                    schedulesByDay[dayIdx]?.forEach((s: ScheduleEntry) => acc.push(s));
+                    return acc;
+                  }, [])
+              ).map((schedule: ScheduleEntry) => {
+                const colorIndex = colorMap[schedule.name] ?? 0;
+                return (
+                  <div
+                    key={schedule.id}
+                    className={cn(
+                      "flex items-center gap-3 rounded-lg border p-3",
+                      CLASS_COLORS[colorIndex].replace("bg-", "bg-").replace("/15", "/10"),
+                      "hover:opacity-80 transition-opacity cursor-pointer"
+                    )}
+                    onClick={() => handleEditClick(schedule)}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-sm truncate">{schedule.name}</span>
+                        {selectedDay === null && (
+                          <span className="text-xs text-muted-foreground shrink-0">
+                            {dayAbbrevs[schedule.day_of_week]}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {formatTime(schedule.start_time)} – {formatTime(schedule.end_time)}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={(e) => { e.stopPropagation(); handleEditClick(schedule); }}
+                      >
+                        <Edit className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive"
+                        onClick={(e) => { e.stopPropagation(); setScheduleToDelete(schedule); }}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Desktop: Weekly calendar grid */}
+      {!isMobile && (
       <div className="rounded-lg border bg-card overflow-hidden">
         <div className="overflow-x-auto">
           <div className="min-w-[800px]">
@@ -639,6 +741,7 @@ export default function Schedule() {
           </div>
         )}
       </div>
+      )}
 
       <AlertDialog open={!!scheduleToDelete} onOpenChange={(open) => !open && setScheduleToDelete(null)}>
         <AlertDialogContent>

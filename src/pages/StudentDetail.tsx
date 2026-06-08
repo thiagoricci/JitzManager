@@ -721,7 +721,7 @@ export default function StudentDetail() {
             </div>
           </CardContent>
         </Card>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 md:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
           <div className="space-y-6">
             <Card>
               <CardContent className="p-6 space-y-4">
@@ -795,40 +795,42 @@ export default function StudentDetail() {
     <>
     <Seo title="Student Details" />
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <Button variant="outline" size="sm" onClick={() => navigate(-1)}>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <Button variant="outline" size="sm" onClick={() => navigate(-1)} className="w-fit">
           <ArrowLeft className="mr-2 h-4 w-4" />
           Go Back
         </Button>
-        {student.waiver_status === "signed" ? (
-          <Button variant="outline" size="sm" onClick={() => setIsWaiverViewOpen(true)}>
-            <Eye className="mr-2 h-4 w-4" />
-            View Signed Waiver
-          </Button>
-        ) : (
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => setIsWaiverSignOpen(true)}>
-              <FileSignature className="mr-2 h-4 w-4" />
-              Sign on Screen
+        <div className="flex gap-2 flex-wrap">
+          {student.waiver_status === "signed" ? (
+            <Button variant="outline" size="sm" onClick={() => setIsWaiverViewOpen(true)}>
+              <Eye className="mr-2 h-4 w-4" />
+              <span className="hidden sm:inline">View Signed </span>Waiver
             </Button>
-            <Button variant="outline" size="sm" onClick={handleCopyWaiverLink}>
-              <Link2 className="mr-2 h-4 w-4" />
-              Copy Link
-            </Button>
-          </div>
-        )}
+          ) : (
+            <>
+              <Button variant="outline" size="sm" onClick={() => setIsWaiverSignOpen(true)}>
+                <FileSignature className="mr-2 h-4 w-4" />
+                <span className="hidden sm:inline">Sign on </span>Screen
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleCopyWaiverLink}>
+                <Link2 className="mr-2 h-4 w-4" />
+                Copy Link
+              </Button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Student Header */}
       <Card>
-        <CardContent className="pt-6">
-          <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted text-2xl font-bold text-muted-foreground">
+        <CardContent className="pt-4 md:pt-6">
+          <div className="flex items-center gap-3 md:gap-4">
+            <div className="flex h-12 w-12 md:h-16 md:w-16 items-center justify-center rounded-full bg-muted text-xl md:text-2xl font-bold text-muted-foreground shrink-0">
               {student.name?.charAt(0) || "?"}
             </div>
-            <div className="flex-1 flex items-center justify-between">
-              <div className="flex flex-col gap-1.5">
-                <h2 className="text-2xl font-bold text-foreground">{student.name || "Unknown Student"}</h2>
+            <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+              <div className="flex flex-col gap-1.5 min-w-0">
+                <h2 className="text-xl md:text-2xl font-bold text-foreground truncate">{student.name || "Unknown Student"}</h2>
                 <WaiverBadge status={student.waiver_status} className="w-fit" />
               </div>
               {(() => {
@@ -849,7 +851,7 @@ export default function StudentDetail() {
                 
                 // Determine background color
                 const bgClass = cn(
-                  "h-8 w-[140px] border-none",
+                  "h-8 w-[120px] md:w-[140px] border-none text-sm shrink-0",
                   isActiveStudent && "bg-green-500 text-white hover:bg-green-600",
                   isTrial && "bg-blue-500 text-white hover:bg-blue-600",
                   isNone && "bg-gray-400 text-white hover:bg-gray-500",

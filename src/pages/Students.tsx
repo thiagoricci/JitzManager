@@ -55,6 +55,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import ImportStudentsDialog, { StudentImportData } from "@/components/ImportStudentsDialog";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export default function Students() {
   const { organization, can } = useAuth();
@@ -70,6 +71,7 @@ export default function Students() {
   const studentsPerPage = 10;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -197,13 +199,13 @@ export default function Students() {
     <>
     <Seo title="Students" />
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pb-4 border-b border-border/60">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pb-3 md:pb-4 border-b border-border/60">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight text-foreground">Students</h2>
-          <p className="text-muted-foreground mt-1">Manage your academy students</p>
+          <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">Students</h2>
+          <p className="text-sm text-muted-foreground mt-1">Manage your academy students</p>
         </div>
         <div className="flex items-center gap-2">
-          <div className="relative w-full sm:w-80">
+          <div className="relative flex-1 sm:w-80">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Search students..."
@@ -213,9 +215,9 @@ export default function Students() {
             />
           </div>
           {can("manage_students") && (
-            <Button variant="outline" onClick={() => setIsImportDialogOpen(true)}>
-              <Upload className="mr-2 h-4 w-4" />
-              Import
+            <Button variant="outline" onClick={() => setIsImportDialogOpen(true)} className="shrink-0">
+              <Upload className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Import</span>
             </Button>
           )}
         </div>
@@ -251,6 +253,96 @@ export default function Students() {
         </div>
       ) : (
       <>
+      {isMobile ? (
+        <div className="space-y-2">
+          {students.map((student) => (
+            <div
+              key={student.id}
+              className="flex items-center gap-3 p-3 rounded-lg border bg-card cursor-pointer transition-colors hover:bg-muted/50"
+              onClick={() => navigate(`/student/${student.id}`)}
+            >
+              <div className={cn(
+                "flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold shrink-0",
+                getAvatarColor(student.name || "?")
+              )}>
+                {student.name?.charAt(0) || "?"}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium truncate text-sm">{student.name || "Unknown Student"}</p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <Badge
+                    variant="outline"
+                    className={cn(
+                      "text-[10px] font-medium px-1.5 py-0 h-5",
+                      student.membership_status === "active" &&
+                        "bg-green-50 text-green-700 border-green-200",
+                      student.membership_status === "inactive" &&
+                        "bg-gray-100 text-gray-600 border-gray-200",
+                      student.membership_status === "frozen" &&
+                        "bg-amber-50 text-amber-700 border-amber-200",
+                      student.status === "trial" &&
+                        student.membership_status !== "inactive" &&
+                        student.membership_status !== "frozen" &&
+                        "bg-blue-50 text-blue-700 border-blue-200",
+                      (student.status === "none" || !student.status) &&
+                        student.membership_status !== "active" &&
+                        student.membership_status !== "inactive" &&
+                        student.membership_status !== "frozen" &&
+                        "bg-gray-50 text-gray-500 border-gray-200"
+                    )}
+                  >
+                    {student.membership_status === "inactive"
+                      ? "Inactive"
+                      : student.membership_status === "frozen"
+                      ? "Frozen"
+                      : student.membership_status === "active"
+                      ? "Active"
+                      : student.status === "trial"
+                      ? "Trial"
+                      : student.status === "none" || !student.status
+                      ? "None"
+                      : "-"}
+                  </Badge>
+                  {student.phone && (
+                    <span className="text-xs text-muted-foreground truncate">{student.phone}</span>
+                  )}
+                </div>
+              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="h-8 w-8 p-0 shrink-0" onClick={(e) => e.stopPropagation()}>
+                    <span className="sr-only">Open menu</span>
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                  <DropdownMenuItem onClick={() => navigate(`/student/${student.id}`)}>
+                    View details
+                  </DropdownMenuItem>
+                  {can("manage_students") && (
+                    <>
+                      <DropdownMenuItem onClick={() => navigate(`/student/${student.id}/edit`)}>
+                        Edit student
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        className="text-destructive"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setStudentToDelete(student.id);
+                        }}
+                      >
+                        Delete student
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          ))}
+        </div>
+      ) : (
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -387,10 +479,10 @@ export default function Students() {
           </TableBody>
         </Table>
       </div>
-
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-muted-foreground">
-          Showing {students.length} of {totalStudents} students.
+      )}
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-xs md:text-sm text-muted-foreground">
+          {students.length} of {totalStudents}
         </div>
         <div className="flex items-center gap-1">
           <Button
@@ -402,7 +494,7 @@ export default function Students() {
           >
             ‹
           </Button>
-          {Array.from({ length: totalPages }, (_, i) => i + 1)
+          {!isMobile && Array.from({ length: totalPages }, (_, i) => i + 1)
             .filter((page) => {
               if (totalPages <= 7) return true;
               if (page === 1 || page === totalPages) return true;
@@ -432,6 +524,11 @@ export default function Students() {
                 </Button>
               )
             )}
+          {isMobile && (
+            <span className="text-xs text-muted-foreground px-1">
+              {currentPage}/{totalPages}
+            </span>
+          )}
           <Button
             variant="outline"
             size="icon"

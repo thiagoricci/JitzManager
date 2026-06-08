@@ -200,7 +200,7 @@ export default function Memberships() {
           </div>
           <Skeleton className="h-10 w-28" />
         </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 md:gap-4 grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <Card key={i} className="overflow-hidden">
               <CardContent className="p-6">
@@ -216,7 +216,7 @@ export default function Memberships() {
             </Card>
           ))}
         </div>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 3 }).map((_, i) => (
             <Card key={i}>
               <CardHeader>
@@ -266,10 +266,10 @@ export default function Memberships() {
     <>
     <Seo title="Memberships" />
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight text-foreground">Memberships</h2>
-          <p className="text-muted-foreground">Manage membership plans and pricing</p>
+          <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">Memberships</h2>
+          <p className="text-sm text-muted-foreground">Manage membership plans and pricing</p>
         </div>
         {canManageBilling && (
           <Button onClick={handleAddPlan}>

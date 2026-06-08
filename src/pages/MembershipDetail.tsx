@@ -28,6 +28,7 @@ import { supabase } from "@/lib/supabase";
 import { formatDate } from "@/lib/date";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState, useEffect } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export default function MembershipDetail() {
   useEffect(() => {
@@ -42,6 +43,7 @@ export default function MembershipDetail() {
     key: "join_date",
     direction: "desc",
   });
+  const isMobile = useIsMobile();
 
   const { data: membershipPlan, isLoading: isPlanLoading } = useQuery({
     queryKey: ["membershipPlan", id],
@@ -105,21 +107,21 @@ export default function MembershipDetail() {
     <>
     <Seo title="Membership Details" />
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="outline" size="icon" onClick={() => navigate(-1)}>
+      <div className="flex items-center gap-3 md:gap-4">
+        <Button variant="outline" size="icon" onClick={() => navigate(-1)} className="shrink-0">
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight text-foreground">
+        <div className="min-w-0">
+          <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground truncate">
             {membershipPlan.name}
           </h2>
-          <p className="text-muted-foreground">
+          <p className="text-sm text-muted-foreground truncate">
             {membershipPlan.description}
           </p>
         </div>
       </div>
       <div className="flex items-center gap-2">
-        <div className="relative w-full sm:w-80">
+        <div className="relative flex-1 sm:w-80">
           <Input
             placeholder="Search students..."
             value={searchQuery}
@@ -130,6 +132,53 @@ export default function MembershipDetail() {
         </div>
       </div>
 
+      {isMobile ? (
+        <div className="space-y-2">
+          {filteredStudents.map((student) => (
+            <div
+              key={student.id}
+              className="flex items-center gap-3 p-3 rounded-lg border bg-card cursor-pointer hover:bg-muted/50 transition-colors"
+              onClick={() => navigate(`/student/${student.id}`)}
+            >
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary shrink-0">
+                {student.name?.charAt(0) || "?"}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-sm truncate">{student.name || "Unknown Student"}</p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <BeltBadge rank={student.belt as BeltRank} className="scale-75 origin-left" />
+                  <Badge
+                    variant="secondary"
+                    className={cn(
+                      "text-[10px] h-5 px-1.5",
+                      student.status === "student" && student.membership_status === "active" && "bg-green-500 text-white",
+                      student.status === "student" && student.membership_status === "inactive" && "bg-gray-500 text-white",
+                      student.status === "student" && student.membership_status === "frozen" && "bg-yellow-500 text-white",
+                      student.status === "trial" && "bg-blue-100 text-blue-800"
+                    )}
+                  >
+                    {student.status === "trial" ? "Trial" : student.membership_status ? student.membership_status.charAt(0).toUpperCase() + student.membership_status.slice(1) : "None"}
+                  </Badge>
+                </div>
+              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="h-8 w-8 p-0 shrink-0" onClick={(e) => e.stopPropagation()}>
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => navigate(`/student/${student.id}`)}>View details</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate(`/student/${student.id}/edit`)}>Edit student</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          ))}
+          {filteredStudents.length === 0 && (
+            <div className="text-center py-8 text-muted-foreground text-sm">No students found.</div>
+          )}
+        </div>
+      ) : (
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -251,7 +300,7 @@ export default function MembershipDetail() {
           </TableBody>
         </Table>
       </div>
-    </div>
+      )}    </div>
     </>
   );
 }

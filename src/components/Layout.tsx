@@ -82,19 +82,21 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <div className="min-h-screen flex w-full bg-background">
         <AppSidebar />
         
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col min-w-0">
           <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <div className="flex h-16 items-center justify-between px-6">
-              <div className="flex items-center gap-4">
-                <SidebarTrigger />
-                <Breadcrumbs />
+            <div className="flex h-14 md:h-16 items-center justify-between px-3 md:px-6 gap-2">
+              <div className="flex items-center gap-2 md:gap-4 min-w-0 flex-1">
+                <SidebarTrigger className="shrink-0" />
+                <div className="min-w-0 hidden sm:block">
+                  <Breadcrumbs />
+                </div>
               </div>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 md:gap-4 shrink-0">
                 {can("manage_students") && (
                   <Link to="/add-student">
                     <Button size="sm">
-                      <Plus className="mr-2 h-4 w-4" />
-                      Add Student
+                      <Plus className="h-4 w-4 md:mr-2" />
+                      <span className="hidden md:inline">Add Student</span>
                     </Button>
                   </Link>
                 )}
@@ -125,7 +127,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </div>
           </header>
 
-          <main className="flex-1 p-6">{children}</main>
+          <main className="flex-1 p-3 md:p-6">{children}</main>
         </div>
       </div>
     </SidebarProvider>

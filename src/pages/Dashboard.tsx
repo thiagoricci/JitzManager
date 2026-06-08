@@ -134,14 +134,13 @@ import { Card, CardContent } from "@/components/ui/card";
   return (
     <>
     <Seo title="Dashboard" />
-    <div className="space-y-6">
-      <div className="pb-4 border-b border-border/60">
-        <h2 className="text-3xl font-bold tracking-tight text-foreground">Dashboard</h2>
-        <p className="text-muted-foreground mt-1">Overview of your academy</p>
+    <div className="space-y-4 md:space-y-6">
+      <div className="pb-3 md:pb-4 border-b border-border/60">
+        <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">Dashboard</h2>
+        <p className="text-sm md:text-base text-muted-foreground mt-1">Overview of your academy</p>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 md:gap-4 grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total Students"
           value={totalStudentsCount}
@@ -172,14 +171,14 @@ import { Card, CardContent } from "@/components/ui/card";
       <FailedPayments />
 
       {/* Charts Grid */}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-3 md:gap-4 md:grid-cols-2">
         <StudentGrowthChart />
         <RevenueChart />
         <AttendanceChart />
         <BeltDistributionChart />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-3 md:gap-4 md:grid-cols-2">
         <StudentList
           title="Recent Students"
           students={recentStudents}
@@ -192,7 +191,7 @@ import { Card, CardContent } from "@/components/ui/card";
         />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-3 md:gap-4 md:grid-cols-2">
         <StudentList
           title="Frozen Students"
           students={frozenStudents}

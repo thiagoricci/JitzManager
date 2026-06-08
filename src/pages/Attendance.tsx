@@ -326,11 +326,11 @@ export default function Attendance() {
   return (
     <>
     <Seo title="Attendance" />
-    <div className="space-y-6 h-[calc(100vh-4rem)] flex flex-col">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between shrink-0">
+    <div className="space-y-4 md:space-y-6 h-[calc(100vh-3.5rem)] md:h-[calc(100vh-4rem)] flex flex-col">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between shrink-0">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight text-foreground">Class Check-in</h2>
-          <p className="text-muted-foreground">
+          <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">Class Check-in</h2>
+          <p className="text-sm text-muted-foreground">
             {formatDate(new Date(), timezone, "EEEE, MMMM do, yyyy")}
           </p>
         </div>
@@ -413,12 +413,12 @@ export default function Attendance() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 flex-1 min-h-0">
         {/* Student Selection Area */}
-        <div className="lg:col-span-2 flex flex-col min-h-0">
-          <h3 className="font-semibold mb-4">Select Student to Check In</h3>
-          <ScrollArea className="flex-1 pr-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 pb-4">
+        <div className="lg:col-span-2 flex flex-col min-h-0 order-2 lg:order-1">
+          <h3 className="font-semibold mb-3 md:mb-4 text-sm md:text-base">Select Student to Check In</h3>
+          <ScrollArea className="flex-1">
+            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-4 pb-4 pr-0 md:pr-4">
               {filteredStudents?.map((student) => {
                 const isCheckedIn = checkedInStudentIds.has(student.id);
                 return (
@@ -433,15 +433,15 @@ export default function Attendance() {
                     }`}
                     onClick={() => !isCheckedIn && currentClass && handleCheckIn(student.id)}
                   >
-                    <CardContent className="p-4 flex items-center gap-4">
-                      <Avatar className="h-12 w-12 border-2 border-background">
-                        <AvatarFallback className="bg-primary/10 text-primary font-bold">
+                    <CardContent className="p-2 md:p-4 flex items-center gap-2 md:gap-4">
+                      <Avatar className="h-9 w-9 md:h-12 md:w-12 border-2 border-background">
+                        <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs md:text-sm">
                           {student.name?.charAt(0)}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{student.name}</p>
-                        <BeltBadge rank={student.belt as BeltRank} className="mt-1 scale-90 origin-left" />
+                        <p className="font-medium truncate text-sm">{student.name}</p>
+                        <BeltBadge rank={student.belt as BeltRank} className="mt-0.5 md:mt-1 scale-75 md:scale-90 origin-left" />
                       </div>
                       {isCheckedIn && (
                         <CheckCircle2 className="h-6 w-6 text-green-500 shrink-0" />
@@ -460,13 +460,13 @@ export default function Attendance() {
         </div>
 
         {/* Checked In List */}
-        <div className="bg-muted/30 rounded-lg border p-4 flex flex-col min-h-0">
-          <div className="flex items-center justify-between mb-4 shrink-0">
-            <h3 className="font-semibold flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5 text-green-500" />
+        <div className="bg-muted/30 rounded-lg border p-3 md:p-4 flex flex-col min-h-0 order-1 lg:order-2 max-h-[40vh] lg:max-h-none">
+          <div className="flex items-center justify-between mb-3 md:mb-4 shrink-0">
+            <h3 className="font-semibold flex items-center gap-2 text-sm md:text-base">
+              <CheckCircle2 className="h-4 w-4 md:h-5 md:w-5 text-green-500" />
               Checked In
             </h3>
-            <span className="text-sm font-medium bg-background px-2 py-1 rounded-md border">
+            <span className="text-xs md:text-sm font-medium bg-background px-2 py-1 rounded-md border">
               {classAttendance?.length || 0} Students
             </span>
           </div>
