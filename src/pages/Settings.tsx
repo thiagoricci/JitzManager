@@ -41,6 +41,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
@@ -60,7 +61,6 @@ const settingsSchema = z.object({
 
 type SettingsFormValues = z.infer<typeof settingsSchema>;
 
-// Common timezones list
 const timezones = [
   "UTC",
   "America/New_York",
@@ -146,151 +146,182 @@ export default function Settings() {
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Academy Settings</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
         <p className="text-muted-foreground">
-          Manage your academy's profile and preferences.
+          Manage your academy's profile, payments, and preferences.
         </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>General Information</CardTitle>
-          <CardDescription>
-            Update your academy's public information and location settings.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Academy Name</FormLabel>
-                    <FormControl>
-                      <div className="flex items-center gap-2">
-                        <Building2 className="h-4 w-4 text-muted-foreground" />
-                        <Input placeholder="Gracie Barra Downtown" {...field} />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+      <Tabs defaultValue="general" className="space-y-6">
+        <TabsList className="w-full justify-start overflow-x-auto">
+          <TabsTrigger value="general">General</TabsTrigger>
+          <TabsTrigger value="appearance">Appearance</TabsTrigger>
+          <TabsTrigger value="payments">Payments</TabsTrigger>
+          <TabsTrigger value="waiver">Waiver</TabsTrigger>
+          <TabsTrigger value="staff">Staff</TabsTrigger>
+          <TabsTrigger value="billing">Billing</TabsTrigger>
+          <TabsTrigger value="audit">Audit Log</TabsTrigger>
+        </TabsList>
 
-              <FormField
-                control={form.control}
-                name="logo_url"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Academy Logo</FormLabel>
-                    <FormControl>
-                      <LogoUpload
-                        value={field.value || null}
-                        onChange={(url) => field.onChange(url || "")}
-                        organizationId={organization.id}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      This logo appears in the sidebar and on student-facing pages.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+        <TabsContent value="general" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>General Information</CardTitle>
+              <CardDescription>
+                Update your academy's public information and location settings.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Academy Name</FormLabel>
+                        <FormControl>
+                          <div className="flex items-center gap-2">
+                            <Building2 className="h-4 w-4 text-muted-foreground" />
+                            <Input placeholder="Gracie Barra Downtown" {...field} />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              <FormField
-                control={form.control}
-                name="address"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Address</FormLabel>
-                    <FormControl>
-                      <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4 text-muted-foreground" />
-                        <Input placeholder="123 Main St, City, State" {...field} />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                  <FormField
+                    control={form.control}
+                    name="logo_url"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Academy Logo</FormLabel>
+                        <FormControl>
+                          <LogoUpload
+                            value={field.value || null}
+                            onChange={(url) => field.onChange(url || "")}
+                            organizationId={organization.id}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          This logo appears in the sidebar and on student-facing pages.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              <FormField
-                control={form.control}
-                name="timezone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Timezone</FormLabel>
-                    <div className="flex gap-2">
-                      <FormControl>
-                        <div className="flex-1 flex items-center gap-2">
-                          <Globe className="h-4 w-4 text-muted-foreground" />
-                          <Select
-                            onValueChange={field.onChange}
-                            value={field.value}
+                  <FormField
+                    control={form.control}
+                    name="address"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Address</FormLabel>
+                        <FormControl>
+                          <div className="flex items-center gap-2">
+                            <MapPin className="h-4 w-4 text-muted-foreground" />
+                            <Input placeholder="123 Main St, City, State" {...field} />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="timezone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Timezone</FormLabel>
+                        <div className="flex gap-2">
+                          <FormControl>
+                            <div className="flex-1 flex items-center gap-2">
+                              <Globe className="h-4 w-4 text-muted-foreground" />
+                              <Select
+                                onValueChange={field.onChange}
+                                value={field.value}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select timezone" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {timezones.map((tz) => (
+                                    <SelectItem key={tz} value={tz}>
+                                      {tz}
+                                    </SelectItem>
+                                  ))}
+                                  {!timezones.includes(field.value) && field.value && (
+                                    <SelectItem value={field.value}>
+                                      {field.value}
+                                    </SelectItem>
+                                  )}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </FormControl>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleDetectTimezone}
                           >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select timezone" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {timezones.map((tz) => (
-                                <SelectItem key={tz} value={tz}>
-                                  {tz}
-                                </SelectItem>
-                              ))}
-                              {!timezones.includes(field.value) && field.value && (
-                                <SelectItem value={field.value}>
-                                  {field.value}
-                                </SelectItem>
-                              )}
-                            </SelectContent>
-                          </Select>
+                            Detect
+                          </Button>
                         </div>
-                      </FormControl>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={handleDetectTimezone}
-                      >
-                        Detect
-                      </Button>
-                    </div>
-                    <FormDescription>
-                      This will be used to display dates and times correctly for your
-                      location.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                        <FormDescription>
+                          This will be used to display dates and times correctly for your
+                          location.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              <div className="flex justify-end">
-                <Button type="submit" disabled={loading}>
-                  {loading ? (
-                    "Saving..."
-                  ) : (
-                    <>
-                      <Save className="mr-2 h-4 w-4" />
-                      Save Changes
-                    </>
-                  )}
-                </Button>
-              </div>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
+                  <div className="flex justify-end">
+                    <Button type="submit" disabled={loading}>
+                      {loading ? (
+                        "Saving..."
+                      ) : (
+                        <>
+                          <Save className="mr-2 h-4 w-4" />
+                          Save Changes
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            </CardContent>
+          </Card>
 
+          <DangerZoneCard />
+        </TabsContent>
 
-      <AppearanceCard />
-      <StaffManagementCard />
-      <WaiverCard />
-      <StripeConnectCard />
-      <DunningSettingsCard />
-      <AuditLogCard />
-      <DangerZoneCard />
+        <TabsContent value="appearance">
+          <AppearanceCard />
+        </TabsContent>
+
+        <TabsContent value="payments">
+          <StripeConnectCard />
+        </TabsContent>
+
+        <TabsContent value="waiver">
+          <WaiverCard />
+        </TabsContent>
+
+        <TabsContent value="staff">
+          <StaffManagementCard />
+        </TabsContent>
+
+        <TabsContent value="billing">
+          <DunningSettingsCard />
+        </TabsContent>
+
+        <TabsContent value="audit">
+          <AuditLogCard />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
@@ -463,10 +494,8 @@ function StripeConnectCard() {
         }
       );
       if (error) {
-        // Try to extract the actual error message from the response body
         let message = error.message || "Failed to create Stripe link";
         try {
-          // FunctionsHttpError exposes the raw response via .context
           const body = await (error as { context?: Response }).context?.json?.();
           if (body?.error) message = body.error;
         } catch {
@@ -519,7 +548,6 @@ function StripeConnectCard() {
       </CardHeader>
       <CardContent className="space-y-4">
 
-        {/* ── State 1: Not connected ── */}
         {!isConnected && (
           <>
             <div className="flex items-center gap-3 rounded-lg border border-yellow-500/50 bg-yellow-50 dark:bg-yellow-950/20 p-4">
@@ -538,7 +566,6 @@ function StripeConnectCard() {
           </>
         )}
 
-        {/* ── State 2: Connected but onboarding incomplete ── */}
         {isConnected && !isReady && (
           <>
             <div className="flex items-center gap-3 rounded-lg border border-orange-500/50 bg-orange-50 dark:bg-orange-950/20 p-4">
@@ -581,7 +608,6 @@ function StripeConnectCard() {
           </>
         )}
 
-        {/* ── State 3: Connected and ready to charge ── */}
         {isConnected && isReady && (
           <>
             <div className="flex items-center gap-3 rounded-lg border border-green-500/50 bg-green-50 dark:bg-green-950/20 p-4">
