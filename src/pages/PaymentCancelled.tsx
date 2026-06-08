@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { Seo } from "@/lib/seo";
 import { toast } from "sonner";
 
 export default function PaymentCancelled() {

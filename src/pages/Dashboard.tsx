@@ -1,4 +1,5 @@
 import { Users, TrendingUp, UserPlus, UserCheck } from "lucide-react";
+import { Seo } from "@/lib/seo";
 import StatCard from "@/components/StatCard";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Seo } from "@/lib/seo";
 import { Plus, Users, DollarSign, TrendingUp, Pencil, Trash2, Eye, Link2, MoreVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

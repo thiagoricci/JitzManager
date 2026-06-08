@@ -1,4 +1,5 @@
 import { useParams } from "react-router-dom";
+import { Seo } from "@/lib/seo";
 import { Mail, Phone, MoreHorizontal, ArrowUpDown, ArrowLeft } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";

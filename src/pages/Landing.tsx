@@ -1,3 +1,4 @@
+import { Seo } from "@/lib/seo";
 import {
   Check,
   Loader2,

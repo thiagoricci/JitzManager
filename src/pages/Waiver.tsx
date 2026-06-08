@@ -1,4 +1,5 @@
 import { useParams } from "react-router-dom";
+import { Seo } from "@/lib/seo";
 import WaiverSignForm from "@/components/WaiverSignForm";
 import { Card, CardContent } from "@/components/ui/card";
 

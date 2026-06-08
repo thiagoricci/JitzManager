@@ -1,4 +1,5 @@
 import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Seo } from "@/lib/seo";
 import { ArrowLeft, Award, Edit, Trash2, Activity, Calendar, Snowflake, Link2, FileSignature, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

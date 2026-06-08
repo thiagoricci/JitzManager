@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { Seo } from "@/lib/seo";
 import { ArrowLeft, Book, Users, Calendar, Award, CreditCard, Settings, HelpCircle } from "lucide-react";
 import {
   Accordion,

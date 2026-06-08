@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Seo } from "@/lib/seo";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";

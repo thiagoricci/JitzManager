@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Seo } from "@/lib/seo";
 import { useNavigate } from "react-router-dom";
 import { AlertCircle, DollarSign, RefreshCw, RotateCw, Users, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
