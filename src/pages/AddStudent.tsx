@@ -37,6 +37,7 @@ const studentSchema = z.object({
   name: z.string().min(1, "Name is required"),
   email: z.string().email("Invalid email address").optional().or(z.literal("")),
   phone: z.string().optional(),
+  birth_date: z.string().optional(),
 });
 
 type StudentFormValues = z.infer<typeof studentSchema>;
@@ -51,6 +52,7 @@ export default function AddStudent() {
       name: "",
       email: "",
       phone: "",
+      birth_date: "",
     },
   });
 
@@ -59,6 +61,7 @@ export default function AddStudent() {
       name: string;
       email: string | null;
       phone: string | null;
+      birth_date: string | null;
       status: string;
       belt: string;
       stripes: number;
@@ -93,6 +96,7 @@ export default function AddStudent() {
       name: values.name,
       email: values.email || null,
       phone: values.phone || null,
+      birth_date: values.birth_date || null,
       status: "none",
       belt: "white",
       stripes: 0,
@@ -170,6 +174,19 @@ export default function AddStudent() {
                           placeholder="student@email.com"
                           {...field}
                         />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="birth_date"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Date of Birth</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

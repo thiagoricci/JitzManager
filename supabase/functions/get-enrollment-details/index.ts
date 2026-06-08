@@ -32,7 +32,7 @@ serve(async (req: Request) => {
 
     const { data: plan, error } = await supabase
       .from("membership_plans")
-      .select("id, name, description, price, period, currency, status, organization_id, organizations(name, stripe_account_id)")
+      .select("id, name, description, price, period, currency, status, organization_id, organizations(name, stripe_account_id, waiver_text)")
       .eq("id", planId)
       .single();
 
@@ -45,7 +45,7 @@ serve(async (req: Request) => {
       return json({ error: "This plan can't be joined online." }, 400);
     }
 
-    const org = plan.organizations as { name: string; stripe_account_id: string | null };
+    const org = plan.organizations as { name: string; stripe_account_id: string | null; waiver_text: string | null };
     if (!org?.stripe_account_id) {
       return json({ error: "This gym isn't set up to accept online payments yet." }, 400);
     }
@@ -59,6 +59,7 @@ serve(async (req: Request) => {
         period: plan.period,
         currency: plan.currency,
       },
+      waiverText: org.waiver_text?.trim() || null,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : JSON.stringify(error);

@@ -85,10 +85,13 @@ serve(async (req: Request) => {
       customerId: (session.customer as string) ?? null,
       subscriptionId,
       amountTotal: session.amount_total ?? null,
-      // Details we captured on the join form take priority over what Stripe collected.
       name: meta.signupName || session.customer_details?.name || null,
       email: meta.signupEmail || session.customer_details?.email || null,
       phone: meta.signupPhone || session.customer_details?.phone || null,
+      dateOfBirth: meta.signupDateOfBirth || null,
+      waiverSignedName: meta.waiverSignedName || null,
+      waiverIsMinor: meta.waiverIsMinor === "true",
+      waiverGuardianName: meta.waiverGuardianName || null,
     });
 
     return json({ success: true, studentId: result.studentId });

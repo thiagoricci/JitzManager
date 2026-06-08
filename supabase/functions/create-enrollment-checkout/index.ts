@@ -34,12 +34,16 @@ serve(async (req: Request) => {
   }
 
   try {
-    const { organizationId, planId, name, email, phone } = await req.json() as {
+    const { organizationId, planId, name, email, phone, dateOfBirth, waiverSignedName, isMinor, guardianName } = await req.json() as {
       organizationId?: string;
       planId?: number | string;
       name?: string;
       email?: string;
       phone?: string;
+      dateOfBirth?: string;
+      waiverSignedName?: string;
+      isMinor?: boolean;
+      guardianName?: string;
     };
 
     if (!organizationId || !planId) return json({ error: "Missing organizationId or planId" }, 400);
@@ -113,6 +117,10 @@ serve(async (req: Request) => {
       signupName: cleanName,
       signupEmail: cleanEmail,
       signupPhone: cleanPhone,
+      signupDateOfBirth: dateOfBirth || "",
+      waiverSignedName: waiverSignedName?.trim() || cleanName,
+      waiverIsMinor: isMinor ? "true" : "false",
+      waiverGuardianName: guardianName?.trim() || "",
     };
 
     const session = await stripe.checkout.sessions.create(

@@ -127,6 +127,28 @@ serve(async (req) => {
           return new Response("Error: Missing metadata in self-signup session", { status: 400 });
         }
 
+        // Recover waiver metadata from the subscription when the session lacks it.
+        let waiverSignedName = session.metadata?.waiverSignedName;
+        let signupDateOfBirth = session.metadata?.signupDateOfBirth;
+        let waiverIsMinor = session.metadata?.waiverIsMinor;
+        let waiverGuardianName = session.metadata?.waiverGuardianName;
+
+        if (!waiverSignedName && session.subscription) {
+          try {
+            const connectedAccountId = event.account;
+            const sub = await stripe.subscriptions.retrieve(
+              session.subscription as string,
+              connectedAccountId ? { stripeAccount: connectedAccountId } : {}
+            );
+            waiverSignedName = waiverSignedName || sub.metadata?.waiverSignedName;
+            signupDateOfBirth = signupDateOfBirth || sub.metadata?.signupDateOfBirth;
+            waiverIsMinor = waiverIsMinor || sub.metadata?.waiverIsMinor;
+            waiverGuardianName = waiverGuardianName || sub.metadata?.waiverGuardianName;
+          } catch (metaErr) {
+            console.error("Error recovering waiver metadata from subscription:", metaErr);
+          }
+        }
+
         const result = await provisionSelfSignup(stripe, supabaseAdmin, {
           organizationId,
           planId,
@@ -134,9 +156,13 @@ serve(async (req) => {
           customerId: (session.customer as string) ?? null,
           subscriptionId: (session.subscription as string) ?? null,
           amountTotal: session.amount_total ?? null,
-          name: session.customer_details?.name ?? null,
-          email: session.customer_details?.email ?? null,
-          phone: session.customer_details?.phone ?? null,
+          name: session.metadata?.signupName || (session.customer_details?.name ?? null),
+          email: session.metadata?.signupEmail || (session.customer_details?.email ?? null),
+          phone: session.metadata?.signupPhone || (session.customer_details?.phone ?? null),
+          dateOfBirth: signupDateOfBirth || null,
+          waiverSignedName: waiverSignedName || null,
+          waiverIsMinor: waiverIsMinor === "true",
+          waiverGuardianName: waiverGuardianName || null,
         });
 
         console.log(`Successfully processed self-signup for student: ${result.studentId} (already=${result.alreadyProvisioned})`);

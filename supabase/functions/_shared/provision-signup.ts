@@ -1,5 +1,6 @@
 import Stripe from "https://esm.sh/stripe@12.3.0";
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.86.0";
+import { DEFAULT_WAIVER_TEXT } from "./waiver.ts";
 
 export interface SelfSignupInput {
   organizationId: string;
@@ -7,10 +8,14 @@ export interface SelfSignupInput {
   connectedAccountId?: string | null;
   customerId: string | null;
   subscriptionId: string | null;
-  amountTotal: number | null; // cents, as reported by Stripe
+  amountTotal: number | null;
   name: string | null;
   email: string | null;
   phone: string | null;
+  dateOfBirth?: string | null;
+  waiverSignedName?: string | null;
+  waiverIsMinor?: boolean;
+  waiverGuardianName?: string | null;
 }
 
 /**
@@ -29,6 +34,7 @@ export async function provisionSelfSignup(
   const name = input.name?.trim() || "New Student";
   const email = input.email?.trim() || null;
   const phone = input.phone?.trim() || null;
+  const dateOfBirth = input.dateOfBirth?.trim() || null;
 
   const { data: plan, error: planError } = await supabase
     .from("membership_plans")
@@ -40,6 +46,26 @@ export async function provisionSelfSignup(
   const isTrialPlan =
     parseFloat(plan.price) === 0 &&
     ["daily", "weekly"].includes((plan.period ?? "").toLowerCase());
+
+  // Fetch the org's waiver text for snapshotting at signing time.
+  const { data: orgRow } = await supabase
+    .from("organizations")
+    .select("waiver_text")
+    .eq("id", organizationId)
+    .single();
+  const waiverText = orgRow?.waiver_text?.trim() || DEFAULT_WAIVER_TEXT;
+
+  const waiverSignedName = input.waiverSignedName?.trim() || name;
+  const signedAt = new Date().toISOString();
+  const waiverSignedDetails = {
+    fullName: waiverSignedName,
+    dateOfBirth: dateOfBirth || null,
+    phone: phone,
+    email: email,
+    isMinor: !!input.waiverIsMinor,
+    guardianName: input.waiverGuardianName?.trim() || null,
+    signedAt,
+  };
 
   // Match an existing student by email within the org to avoid duplicates.
   let existing: { id: number; subscription_id: string | null } | null = null;
@@ -64,13 +90,23 @@ export async function provisionSelfSignup(
     membership_plan_id: parseInt(planId),
     stripe_customer_id: customerId,
     subscription_id: subscriptionId,
+    waiver_status: "signed",
+    waiver_signed_at: signedAt,
+    waiver_signed_name: waiverSignedName,
+    waiver_signed_text: waiverText,
+    waiver_signed_details: waiverSignedDetails,
   };
 
   let studentId: number;
   if (existing) {
     const { error } = await supabase
       .from("students")
-      .update({ ...studentFields, name, ...(phone ? { phone } : {}) })
+      .update({
+        ...studentFields,
+        name,
+        ...(phone ? { phone } : {}),
+        ...(dateOfBirth ? { birth_date: dateOfBirth } : {}),
+      })
       .eq("id", existing.id);
     if (error) throw new Error(error.message);
     studentId = existing.id;
@@ -82,6 +118,7 @@ export async function provisionSelfSignup(
         name,
         email,
         phone,
+        birth_date: dateOfBirth,
         belt: "white",
         stripes: 0,
         join_date: new Date().toISOString().split("T")[0],
