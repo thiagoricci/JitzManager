@@ -32,14 +32,12 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { MembershipPlan } from "@/types/membership";
-import { isFreePrice, isTrialPeriod, toAmount } from "@/lib/money";
+import { isFreePrice, isTrialPeriod } from "@/lib/money";
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   description: z.string().optional(),
-  price: z.coerce
-    .number({ invalid_type_error: "Price is required" })
-    .min(0, "Price can't be negative"),
+  price: z.string().min(1, "Price is required"),
   period: z.enum([
     "daily",
     "weekly",
@@ -49,9 +47,6 @@ const formSchema = z.object({
     "annual",
   ]),
   currency: z.string().min(3).max(3),
-  setup_fee: z.coerce
-    .number({ invalid_type_error: "Setup fee must be a number" })
-    .min(0, "Setup fee can't be negative"),
   billing_day_of_month: z.preprocess(
     (v) => (v === "" || v === null || v === undefined ? null : Number(v)),
     z
@@ -91,10 +86,9 @@ export function MembershipDialog({
     defaultValues: {
       name: "",
       description: "",
-      price: 0,
+      price: "",
       period: "monthly",
       currency: "USD",
-      setup_fee: 0,
       billing_day_of_month: null,
       status: "active",
       features: [],
@@ -115,10 +109,9 @@ export function MembershipDialog({
         form.reset({
           name: initialData.name,
           description: initialData.description || "",
-          price: toAmount(initialData.price),
+          price: String(initialData.price ?? ""),
           period: initialData.period,
           currency: initialData.currency || "USD",
-          setup_fee: toAmount(initialData.setup_fee),
           billing_day_of_month: initialData.billing_day_of_month ?? null,
           status: initialData.status as MembershipFormValues["status"],
           features: initialData.features
@@ -130,10 +123,9 @@ export function MembershipDialog({
         form.reset({
           name: "",
           description: "",
-          price: 0,
+          price: "",
           period: "monthly",
           currency: "USD",
-          setup_fee: 0,
           billing_day_of_month: null,
           status: "active",
           features: [],
@@ -145,10 +137,10 @@ export function MembershipDialog({
   const handleTrialChange = (checked: boolean) => {
     setIsTrial(checked);
     if (checked) {
-      form.setValue("price", 0);
+      form.setValue("price", "0");
       form.setValue("period", "weekly");
     } else {
-      form.setValue("price", 0);
+      form.setValue("price", "0");
       form.setValue("period", "monthly");
     }
   };
@@ -221,14 +213,12 @@ export function MembershipDialog({
                   <FormItem>
                     <FormLabel>Price</FormLabel>
                     <FormControl>
-                      <Input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        placeholder="e.g. 150.00"
-                        {...field}
-                        disabled={isTrial}
-                      />
+                    <Input
+                         type="text"
+                         placeholder="e.g. 150.00"
+                         {...field}
+                         disabled={isTrial}
+                       />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -272,53 +262,30 @@ export function MembershipDialog({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="currency"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Currency</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Currency" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {CURRENCIES.map((code) => (
-                          <SelectItem key={code} value={code}>
-                            {code}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="setup_fee"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Setup Fee</FormLabel>
+            <FormField
+              control={form.control}
+              name="currency"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Currency</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
-                      <Input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        placeholder="e.g. 0.00"
-                        {...field}
-                        disabled={isTrial}
-                      />
+                      <SelectTrigger>
+                        <SelectValue placeholder="Currency" />
+                      </SelectTrigger>
                     </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+                    <SelectContent>
+                      {CURRENCIES.map((code) => (
+                        <SelectItem key={code} value={code}>
+                          {code}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}

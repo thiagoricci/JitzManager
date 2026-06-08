@@ -95,6 +95,8 @@ export default function Memberships() {
       if (!profile?.organization_id) throw new Error("Organization not found");
       const formattedData = {
         ...values,
+        price: parseFloat(values.price) || 0,
+        setup_fee: 0,
         features: values.features?.map((f) => f.value) || [],
         organization_id: profile.organization_id,
       };
@@ -117,6 +119,8 @@ export default function Memberships() {
     mutationFn: async (values: MembershipFormValues) => {
       const formattedData = {
         ...values,
+        price: parseFloat(values.price) || 0,
+        setup_fee: 0,
         features: values.features?.map((f) => f.value) || [],
       };
       const { error } = await supabase
